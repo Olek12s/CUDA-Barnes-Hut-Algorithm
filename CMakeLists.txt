@@ -12,6 +12,9 @@ target_include_directories(glad PUBLIC "${CMAKE_SOURCE_DIR}/include")
 add_executable(Barnes-Hut-Licencjat
         main.cpp
         cuda.cu
+        src/Octtree.cpp
+        include/Octtree.h
+        include/Config.h
 )
 
 
