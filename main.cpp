@@ -10,7 +10,7 @@ void cudaApiTest();
 
 int main() {
 
-    std::cout << "test5\n";
+    std::cout << "test6\n";
 
     cudaApiTest();
     glTest();
