@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -8,12 +9,47 @@
 int glTest();
 void cudaApiTest();
 
+struct Z_CODE {
+    unsigned int x_bits;
+    unsigned int y_bits;
+    unsigned int z_bits;
+};
+
+struct Particle {
+    float x, y, z;
+};
+
+
+int interlace(int x, int y, int z) {
+
+}
+
+// true if a > b
+// false if a < b
+bool compareZOrder(const Particle &a, const Particle &b) {
+    return true;
+}
+
 int main() {
 
     std::cout << "test11\n";
 
-    cudaApiTest();
-    glTest();
+
+    std::vector<Particle> particles = {
+        {0.1f, 0.5f, 0.7f},
+            {0.4f, 0.2f, 0.9f},
+            {0.8f, 0.3f, 0.1f}
+    };
+
+    std::sort(particles.begin(), particles.end(), compareZOrder);
+
+    for (auto &p : particles) {
+        std::cout << p.x << " " << p.y << " " << p.z << '\n';
+    }
+
+
+    //cudaApiTest();
+    //glTest();
     return 0;
 }
 
