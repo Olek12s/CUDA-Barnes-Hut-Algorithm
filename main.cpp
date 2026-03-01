@@ -1,6 +1,9 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <limits>
+#include <array>
+#include <utility>
 
 #include "cuda.cuh"
 #include "glad/glad.h"
@@ -8,6 +11,7 @@
 
 int glTest();
 void cudaApiTest();
+
 
 struct Z_CODE {
     unsigned int x_bits;
@@ -19,15 +23,58 @@ struct Particle {
     float x, y, z;
 };
 
+// scale float value to new value between [0, UINT_MAX]
+unsigned int scale(float f, float fmin, float fmax) {
+    float clamped = (f - fmin) / (fmax - fmin); // [0,1]
+    if(clamped < 0.f) clamped = 0.f;
+    if(clamped > 1.f) clamped = 1.f;
+    return (unsigned int)(clamped * 0xFFFFFFFF);
+}
 
-int interlace(int x, int y, int z) {
+std::array<std::pair<float,float>, 3> findMinMax(std::vector<Particle>& particles) {
+    std::array<std::pair<float, float>, 3> bounds =
+    {{
+        {std::numeric_limits<float>::max(),
+         std::numeric_limits<float>::lowest()},
 
+        {std::numeric_limits<float>::max(),
+         std::numeric_limits<float>::lowest()},
+
+        {std::numeric_limits<float>::max(),
+         std::numeric_limits<float>::lowest()}
+    }};
+
+    for (auto &p : particles) {
+        // x
+        bounds[0].first = std::min(bounds[0].first, p.x);
+        bounds[0].second = std::max(bounds[0].second, p.x);
+
+        // y
+        bounds[1].first = std::min(bounds[1].first, p.y);
+        bounds[1].second = std::max(bounds[1].second, p.y);
+
+        // z
+        bounds[2].first = std::min(bounds[2].first, p.z);
+        bounds[2].second = std::max(bounds[2].second, p.z);
+    }
+}
+
+Z_CODE interlace(const Particle& p,float xmin, float xmax, float ymin, float ymax, float zmin, float zmax) {
+    Z_CODE code;
+    code.x_bits = scale(p.x, xmin, xmax);
+    code.y_bits = scale(p.y, ymin, ymax);
+    code.z_bits = scale(p.z, zmin, zmax);
 }
 
 // true if a > b
 // false if a < b
 bool compareZOrder(const Particle &a, const Particle &b) {
-    return true;
+    Z_CODE Za = interlace(a, xmin, xmax, ymin, ymax, zmin, zmax);
+    Z_CODE Zb = interlace(b, xmin, xmax, ymin, ymax, zmin, zmax);
+
+    if (Za.x_bits != Zb.x_bits) return Za.x_bits < Zb.x_bits;
+    if (Za.y_bits != Zb.y_bits) return Za.y_bits < Zb.y_bits;
+    return Za.z_bits < Zb.z_bits;
 }
 
 int main() {
