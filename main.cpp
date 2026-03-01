@@ -3,6 +3,7 @@
 #include <vector>
 #include <limits>
 #include <array>
+#include <random>
 #include <utility>
 
 #include "cuda.cuh"
@@ -12,25 +13,86 @@
 int glTest();
 void cudaApiTest();
 
-
-struct Z_CODE {
-    unsigned int x_bits;
-    unsigned int y_bits;
-    unsigned int z_bits;
-};
+constexpr int MAX_MORTON_BITS = 21; // Z_CODE has 64 unsigned bit type - code is defined by 3 values, thus maximum morton bits is 64/3 = 21
+constexpr unsigned int MORTON_SCALE = (1u << MAX_MORTON_BITS) - 1u;
 
 struct Particle {
     float x, y, z;
+    uint64_t Z_CODE;
 };
 
 // scale float value to new value between [0, UINT_MAX]
 unsigned int scale(float f, float fmin, float fmax) {
+
     float clamped = (f - fmin) / (fmax - fmin); // [0,1]
+
     if(clamped < 0.f) clamped = 0.f;
     if(clamped > 1.f) clamped = 1.f;
-    return (unsigned int)(clamped * 0xFFFFFFFF);
+    return (unsigned int)(clamped * MORTON_SCALE);
 }
 
+
+// expand method could be replaced with naive method iterating through every of 21 bits and doing 3 operations:
+//
+//      morton |= ((x >> i) & 1ull) << (3*i);
+//      morton |= ((y >> i) & 1ull) << (3*i+1);
+//      morton |= ((z >> i) & 1ull) << (3*i+2);
+//
+//  But above method is multiple times slower than the one below.
+
+uint64_t expand(unsigned int v) {
+    uint64_t x = v & 0x1fffff;
+    // 21 bits       // 0b00000000 00000000 00000000 00000000 00000000 00011111 11111111 11111111
+
+    // initial v example value: abcd
+
+    // spacing: 32
+    x = (x | x << 32) & 0x1f00000000ffff;       // 0b00000000 00011111 00000000 00000000 00000000 00000000 11111111 11111111
+
+    // spacing: 16
+    x = (x | x << 16) & 0x1f0000ff0000ff;       // 0b00000000 00011111 00000000 00000000 11111111 00000000 00000000 11111111
+
+    // spacing: 8
+    x = (x | x << 8)  & 0x100f00f00f00f00f;     // 0b00010000 00001111 00000000 11110000 00001111 00000000 11110000 00001111
+
+    // a0b0c0d0         spacing: 2
+    x = (x | x << 4)  & 0x10c30c30c30c30c3;     // 0b00010000 11000011 00001100 00110000 11000011 00001100 00110000 11000011
+
+    // a00b00c00d00     spacing: 3
+    x = (x | x << 2)  & 0x1249249249249249;     // 0b00010010 01001001 00100100 10010010 01001001 00100100 10010010 01001001
+
+
+    return x;
+}
+
+uint64_t getMortonCodeFrom3D(float x, float y, float z, const std::array<std::pair<float,float>,3>& bounds) {
+    uint32_t xs = scale(x, bounds[0].first, bounds[0].second);
+    uint32_t ys = scale(y, bounds[1].first, bounds[1].second);
+    uint32_t zs = scale(z, bounds[2].first, bounds[2].second);
+
+    uint64_t xx = expand(xs);
+    uint64_t yy = expand(ys);
+    uint64_t zz = expand(zs);
+
+    // interlace (x,y,z) bits in pattern: x₀y₀z₀x₁y₁z₁ [...]
+    return xx | (yy << 1) | (zz << 2);
+}
+
+void computeMortonCodes(std::vector<Particle>& particles,const std::array<std::pair<float,float>,3>& bounds)
+{
+    for(auto& p : particles)
+    {
+        p.Z_CODE = getMortonCodeFrom3D(p.x, p.y, p.z, bounds);
+    }
+}
+
+bool comp(const Particle& a, const Particle& b)
+{
+    return a.Z_CODE < b.Z_CODE;
+}
+
+
+// find boundary float values of particles vector
 std::array<std::pair<float,float>, 3> findMinMax(std::vector<Particle>& particles) {
     std::array<std::pair<float, float>, 3> bounds =
     {{
@@ -57,41 +119,87 @@ std::array<std::pair<float,float>, 3> findMinMax(std::vector<Particle>& particle
         bounds[2].first = std::min(bounds[2].first, p.z);
         bounds[2].second = std::max(bounds[2].second, p.z);
     }
+
+    return bounds;
 }
 
-Z_CODE interlace(const Particle& p,float xmin, float xmax, float ymin, float ymax, float zmin, float zmax) {
-    Z_CODE code;
-    code.x_bits = scale(p.x, xmin, xmax);
-    code.y_bits = scale(p.y, ymin, ymax);
-    code.z_bits = scale(p.z, zmin, zmax);
-}
+std::vector<Particle> generateParticles(size_t n)
+{
+    std::vector<Particle> particles;
+    particles.reserve(n);
 
-// true if a > b
-// false if a < b
-bool compareZOrder(const Particle &a, const Particle &b) {
-    Z_CODE Za = interlace(a, xmin, xmax, ymin, ymax, zmin, zmax);
-    Z_CODE Zb = interlace(b, xmin, xmax, ymin, ymax, zmin, zmax);
+    std::random_device rd;
+    std::mt19937 gen(rd());
 
-    if (Za.x_bits != Zb.x_bits) return Za.x_bits < Zb.x_bits;
-    if (Za.y_bits != Zb.y_bits) return Za.y_bits < Zb.y_bits;
-    return Za.z_bits < Zb.z_bits;
+    // [-1000, 1000]
+    std::uniform_real_distribution<float> dist(-1000.0f, 1000.0f);
+
+    for (size_t i = 0; i < n; i++)
+    {
+        particles.push_back({dist(gen),dist(gen),dist(gen)});
+    }
+
+    float limits[2] = { -1000, 1000 };
+    for (float x : limits)
+    {
+        for (float y : limits)
+        {
+            for (float z : limits)
+            {
+                particles.push_back({x, y, z});
+            }
+        }
+    }
+
+    return particles;
 }
 
 int main() {
-
     std::cout << "test11\n";
 
+    // std::vector<Particle> particles = {
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, -400.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {300.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 222.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 222.5f, 0.7f}, {0.4f, 0.2f, -8880.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {0.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    //     {500.1f, 0.5f, 0.7f}, {0.4f, 0.2f, 0.9f},{0.8f, 0.3f, 0.1f}, {0.5, 0.2, -0.1},
+    // };
 
-    std::vector<Particle> particles = {
-        {0.1f, 0.5f, 0.7f},
-            {0.4f, 0.2f, 0.9f},
-            {0.8f, 0.3f, 0.1f}
-    };
+    size_t n = 1000;
+    std::vector<Particle> particles = generateParticles(n);
 
-    std::sort(particles.begin(), particles.end(), compareZOrder);
+    auto bounds = findMinMax(particles);
+    computeMortonCodes(particles, bounds);
+    std::sort(particles.begin(), particles.end(), comp);
 
     for (auto &p : particles) {
         std::cout << p.x << " " << p.y << " " << p.z << '\n';
+    }
+
+    bool monotone = true;
+    for(size_t i = 1; i < particles.size(); i++)
+    {
+        if(particles[i].Z_CODE < particles[i-1].Z_CODE)
+        {
+            monotone = false;
+            break;
+        }
+    }
+    std::cout << "Monotonic Z_CODE: " << (monotone ? "OK" : "FAIL") << "\n\n\n";
+
+    for (auto &p : particles) {
+        std::cout << p.Z_CODE << "\n";
     }
 
 
