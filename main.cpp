@@ -22,7 +22,7 @@ struct Particle {
     uint64_t Z_CODE;
 };
 
-// scale float value to new value between [0, UINT_MAX]
+// scale float value to new value between [0, 21bits]
 unsigned int scale(float f, float fmin, float fmax) {
 
     float clamped = (f - fmin) / (fmax - fmin); // [0,1]
