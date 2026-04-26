@@ -14,7 +14,7 @@ void Octtree::findChildRanges(const std::vector<Particle> &particles, int start,
         childEnd[i] = -1;
     }
 
-    int shift = 64 - 3 * (level + 1);
+    int shift = 3 * (21 - level - 1);   // MAX_MORTON_BITS = 21
 
     for (int i = start; i < end; i++) {
         unsigned int octant = (particles[i].Z_CODE >> shift) & 7;   // 7 == 0b111
@@ -31,18 +31,21 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
     nodes.clear();  // clear off nodes vector
 
     Node root(0, sortedParticles.size(), -1, true);
+    nodes.push_back(root);
 
     std::stack<std::pair<int, int>> stack; // first - nodeIndex, second - level
     stack.push({0, 0});
 
     while (!stack.empty()) {
-        auto [nodeIndex, level] = stack.top();
+        // auto [nodeIndex, level] = stack.top();
+        int nodeIndex = stack.top().first;
+        int level = stack.top().second;
         stack.pop();
 
         Node &node = nodes[nodeIndex];
         int count = node.end - node.start;
 
-        if (count <= MAX_LEAF_SIZE) {
+        if (count <= MAX_LEAF_SIZE || level >= MAX_MORTON_BITS) {
             node.isLeaf = true;
             node.firstChild = -1;
             continue;
@@ -62,12 +65,13 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
         int childOffset = 0;
         for (int i = 0; i < 8; i++) {
             if (childStart[i] == -1) continue;
-            int childIndex = childBase + childOffset;
-
-            stack.push({childIndex, level + 1});
 
             Node child(childStart[i], childEnd[i], -1, false);
             nodes.push_back(child);
+
+            int childIndex = childBase + childOffset;
+            stack.push({childIndex, level + 1});
+
 
             childOffset++;
         }
