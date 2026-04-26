@@ -29,7 +29,7 @@ class Octtree {
     // clears nodes vector and reconstructs its content based on given vector in TOP-DOWN range split nature
     void findChildRanges(const std::vector<Particle>& particles,int start, int end,int level,int childStart[8],int childEnd[8]);
     void buildTree(std::vector<Particle> &sortedParticles);
-
+    void computeMassDistribution(); // TODO: WYKONAĆ
 
     // void insertBodies();
     // void updateMassDistribution();
