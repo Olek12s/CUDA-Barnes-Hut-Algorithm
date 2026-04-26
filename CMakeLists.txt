@@ -15,7 +15,7 @@ add_executable(Barnes-Hut-Licencjat
         src/Octtree.cpp
         include/Octtree.h
         include/Config.h
-        include/KHR/Particle.h
+        include/Particle.h
 )
 
 
