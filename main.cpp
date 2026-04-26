@@ -7,7 +7,7 @@
 #include <random>
 #include <utility>
 
-#include "cuda.cuh"
+#include "src/cuda/cuda.cuh"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
@@ -15,7 +15,7 @@ int glTest();
 void cudaApiTest();
 
 constexpr int MAX_MORTON_BITS = 21; // Z_CODE has 64 unsigned bit type - code is defined by 3 values, thus maximum morton bits is 64/3 = 21
-constexpr unsigned int MORTON_SCALE = (1u << MAX_MORTON_BITS) - 1u; // 2097151, or std::pow(2, 21) - 1 but slower and lass efficient than current method.
+constexpr unsigned int MORTON_SCALE = (1u << MAX_MORTON_BITS) - 1u; // 2097151, or std::pow(2, 21
                                                                     //Morton_SCALE is in other words the biggest digit possible toencode on 21 btis
 
 struct Particle {
@@ -170,6 +170,10 @@ std::vector<Particle> generateParticles(size_t n)
     }
 
     return particles;
+}
+
+void buildTree(std::vector<Particle> &sortedParticles) {
+
 }
 
 int main() {

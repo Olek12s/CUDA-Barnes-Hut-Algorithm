@@ -1,32 +1,28 @@
 #ifndef OCTTREE_H
 #define OCTTREE_H
+#include <vector>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-struct Body {
-    glm::vec3 position;
-    glm::vec3 velocity;
-    glm::vec3 acceleration;
-    glm::vec3 lastAcceleration; // optional?
-    float mass;
-};
 
 struct Node {
-    int children[8];
+    int start, end;         // start and end index of bodies belonging to the node. Start/end refer to ALREADY SORTED particles (by Morton code)
 
-    const int* getChildren() const { return children; }
+    float mass;             // current mass of the node
+    float mcx, mcy, mcz;   // center of mass position in the node
+
+    float size;                         // size of current node (length of the edge)
+    float centerX, centerY, centerZ;    // center of the octant
 };
 
 class Octtree {
+    std::vector<Node> nodes;    // whole tree structure sits here with all the informations
     int rootNode = 0;   // root node has always index 0
 
 
 
-    void insertBodies();
-    void updateMassDistribution();
-    void updateGravAcceleration();
+    void buildTree(std::vector<Particle>& sortedParticles)
+    // void insertBodies();
+    // void updateMassDistribution();
+    // void updateGravAcceleration();
 };
 
 
