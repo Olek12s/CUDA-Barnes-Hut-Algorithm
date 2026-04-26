@@ -7,6 +7,7 @@
 #include <random>
 #include <utility>
 
+#include "Octtree.h"
 #include "src/cuda/cuda.cuh"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
@@ -17,11 +18,6 @@ void cudaApiTest();
 constexpr int MAX_MORTON_BITS = 21; // Z_CODE has 64 unsigned bit type - code is defined by 3 values, thus maximum morton bits is 64/3 = 21
 constexpr unsigned int MORTON_SCALE = (1u << MAX_MORTON_BITS) - 1u; // 2097151, or std::pow(2, 21
                                                                     //Morton_SCALE is in other words the biggest digit possible toencode on 21 btis
-
-struct Particle {
-    float x, y, z;
-    uint64_t Z_CODE;
-};
 
 // scale float value to new value between [0, 21bits]
 unsigned int scale(float f, float fmin, float fmax) {
@@ -274,12 +270,17 @@ int main() {
         // {800.f, 800.f, 800.f},
     };
 
+
+
     //size_t n = 1000;
     //std::vector<Particle> particles = generateParticles(n);
 
     auto bounds = findMinMax(particles);
     computeMortonCodes(particles, bounds);
     std::sort(particles.begin(), particles.end(), comp);
+
+    Octtree tree;
+    tree.buildTree(particles);
 
     for (auto &p : particles) {
         std::cout << p.x << " " << p.y << " " << p.z << '\n';

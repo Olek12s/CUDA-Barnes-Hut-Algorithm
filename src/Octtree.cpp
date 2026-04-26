@@ -46,10 +46,12 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
         int count = node.end - node.start;
 
         if (count <= MAX_LEAF_SIZE || level >= MAX_MORTON_BITS) {
+            if (level >= MAX_MORTON_BITS) std::cout << "Level over " << MAX_MORTON_BITS << "." << " \n";
             node.isLeaf = true;
             node.firstChild = -1;
             continue;
         }
+        std::cout << "Exceeded MAX_LEAF_SIZE. Dividing node into 8 children \n";
 
         int childStart[8];
         int childEnd[8];

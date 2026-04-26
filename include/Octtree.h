@@ -1,7 +1,7 @@
 #ifndef OCTTREE_H
 #define OCTTREE_H
 #include <vector>
-
+#include <iostream>
 #include "Particle.h"
 
 
@@ -25,6 +25,7 @@ class Octtree {
     std::vector<Node> nodes;    // whole tree structure sits here with all the informations
     int rootNode = 0;   // root node has always index 0
 
+public:
 
     // clears nodes vector and reconstructs its content based on given vector in TOP-DOWN range split nature
     void findChildRanges(const std::vector<Particle>& particles,int start, int end,int level,int childStart[8],int childEnd[8]);

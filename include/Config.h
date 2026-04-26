@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-static constexpr int MAX_LEAF_SIZE = 128;
+static constexpr int MAX_LEAF_SIZE = 1;
 constexpr int MAX_MORTON_BITS = 21;
 
 
