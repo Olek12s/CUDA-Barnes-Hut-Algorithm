@@ -19,6 +19,8 @@ struct Node {
 
     unsigned int firstChild;                     // index of first child of current node. Other children's indices are firstchild + n, where n < 8. -1 if child is absent
     bool isLeaf;
+
+    bool isEmppty() const;
 };
 
 class Octtree {
@@ -26,6 +28,7 @@ class Octtree {
     int rootNode = 0;   // root node has always index 0
 
 public:
+
     // For the currently processed node (ONLY ONE NODE) range [start, end)
     // finds index ranges belonging to its 8 children at Vec<Particles> vector.
     //
