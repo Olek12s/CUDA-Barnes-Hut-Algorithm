@@ -26,11 +26,28 @@ class Octtree {
     int rootNode = 0;   // root node has always index 0
 
 public:
+    // For the currently processed node (ONLY ONE NODE) range [start, end)
+    // finds index ranges belonging to its 8 children at Vec<Particles> vector.
+    //
+    // particles MUST already be sorted by Morton code.
+    //
+    // Result:
+    // childStart[i] -> first index of child i
+    // childEnd[i]   -> index AFTER the last element of child i
+    //
+    // If a child does not exist:
+    // childStart[i] == -1
+    // childEnd[i]   == -1
+    // example:
+    // childStart = [0, 2, -1, 5, -1, -1, 7, 9]
+    // childEnd = [2, 5, -1, 7, -1, -1, 9,10]
+    void findChildRanges(const std::vector<Particle>& particles, int start, int end, int level, int childStart[8], int childEnd[8]);
 
     // clears nodes vector and reconstructs its content based on given vector in TOP-DOWN range split nature
-    void findChildRanges(const std::vector<Particle>& particles,int start, int end,int level,int childStart[8],int childEnd[8]);
     void buildTree(std::vector<Particle> &sortedParticles);
-    void computeMassDistribution(); // TODO: WYKONAĆ
+
+    // computes
+    void computeMassDistribution();
 
     // void insertBodies();
     // void updateMassDistribution();
