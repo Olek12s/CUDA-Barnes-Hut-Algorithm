@@ -146,25 +146,17 @@ std::vector<Particle> generateParticles(size_t n)
 
     std::random_device rd;
     std::mt19937 gen(rd());
-
-    // [-1000, 1000]
     std::uniform_real_distribution<float> dist(-1000.0f, 1000.0f);
 
     for (size_t i = 0; i < n; i++)
     {
-        particles.push_back({dist(gen),dist(gen),dist(gen)});
-    }
+        Particle p{}; // zero-initialization (IMPORTANT)
 
-    float limits[2] = { -1000, 1000 };
-    for (float x : limits)
-    {
-        for (float y : limits)
-        {
-            for (float z : limits)
-            {
-                particles.push_back({x, y, z});
-            }
-        }
+        p.x = dist(gen);
+        p.y = dist(gen);
+        p.z = dist(gen);
+
+        particles.push_back(p);
     }
 
     return particles;
@@ -212,67 +204,69 @@ int main() {
     // Level 21 (last package, node size = 2000 / 2^21 ~ 0.00095):
     //   - Each Morton code package corresponds to a single leaf node
 
-    std::vector<Particle> particles = {
-        // bounds
-        {-1000, -1000, -1000},
-         {-1000, -1000, 1000},
-        // {-1000, 1000, -1000},
-        // {-1000, 1000, 1000},
-        // {1000, -1000, 1000},
-        // {1000, -1000, -1000},
-        // {1000, 1000, -1000},
-        // {1000, 1000, 1000},
+    // std::vector<Particle> particles = {
+    //     // bounds
+    //     {-1000, -1000, -1000},
+    //      {-1000, -1000, 1000},
+    //     // {-1000, 1000, -1000},
+    //     // {-1000, 1000, 1000},
+    //     // {1000, -1000, 1000},
+    //     // {1000, -1000, -1000},
+    //     // {1000, 1000, -1000},
+    //     // {1000, 1000, 1000},
+    //
+    //     // 000 octant 0: x ∈ [-1000, 0) y ∈ [-1000, 0) z ∈ [-1000, 0)
+    //     //{-50.f, -760.f, -50.f},
+    //     // {-300.f, -300.f, -300.f},
+    //     // {-550.f, -550.f, -550.f},
+    //     // {-800.f, -800.f, -800.f},
+    //
+    //     // // 001 octant 1: x ∈ [0, 1000] y ∈ [-1000, 0) z ∈ [-1000, 0)
+    //     // {50.f, -50.f, -50.f},
+    //     // {300.f, -300.f, -300.f},
+    //     // {550.f, -550.f, -550.f},
+    //     // {800.f, -800.f, -800.f},
+    //     //
+    //     // // 010 octant 2: x ∈ [-1000, 0) y ∈ [0, 1000] z ∈ [-1000, 0)
+    //     // {-50.f, 50.f, -50.f},
+    //     // {-300.f, 300.f, -300.f},
+    //     // {-550.f, 550.f, -550.f},
+    //     // {-800.f, 800.f, -800.f},
+    //     //
+    //     // // 011 octant 3 x ∈ [0, 1000] y ∈ [0, 1000] z ∈ [-1000, 0)
+    //     // {50.f, 50.f, -50.f},
+    //     // {300.f, 300.f, -300.f},
+    //     // {550.f, 550.f, -550.f},
+    //     // {800.f, 800.f, -800.f},
+    //     //
+    //     // // 100 octant 4 x ∈ [-1000, 0) y ∈ [-1000, 0) z ∈ [0, 1000]
+    //     // {-50.f, -50.f, 50.f},
+    //     // {-300.f, -300.f, 300.f},
+    //     // {-550.f, -550.f, 550.f},
+    //     // {-800.f, -800.f, 800.f},
+    //     //
+    //     // // 101 octant 5 x ∈ [0, 1000] y ∈ [-1000, 0) z ∈ [0, 1000]
+    //     // {50.f, -50.f, 50.f},
+    //     // {300.f, -300.f, 300.f},
+    //     // {550.f, -550.f, 550.f},
+    //     // {800.f, -800.f, 800.f},
+    //     //
+    //     // // 110 octant 6 x ∈ [-1000, 0) y ∈ [0, 1000] z ∈ [0, 1000]
+    //     // {-50.f, 50.f, 50.f},
+    //     // {-300.f, 300.f, 300.f},
+    //     // {-550.f, 550.f, 550.f},
+    //     // {-800.f, 800.f, 800.f},
+    //     //
+    //     // // 111 octant 7 x ∈ [0, 1000] y ∈ [0, 1000] z ∈ [0, 1000]
+    //     // {50.f, 50.f, 50.f},
+    //     // {300.f, 300.f, 300.f},
+    //     // {550.f, 550.f, 550.f},
+    //     // {800.f, 800.f, 800.f},
+    // };
 
-        // 000 octant 0: x ∈ [-1000, 0) y ∈ [-1000, 0) z ∈ [-1000, 0)
-        //{-50.f, -760.f, -50.f},
-        // {-300.f, -300.f, -300.f},
-        // {-550.f, -550.f, -550.f},
-        // {-800.f, -800.f, -800.f},
-
-        // // 001 octant 1: x ∈ [0, 1000] y ∈ [-1000, 0) z ∈ [-1000, 0)
-        // {50.f, -50.f, -50.f},
-        // {300.f, -300.f, -300.f},
-        // {550.f, -550.f, -550.f},
-        // {800.f, -800.f, -800.f},
-        //
-        // // 010 octant 2: x ∈ [-1000, 0) y ∈ [0, 1000] z ∈ [-1000, 0)
-        // {-50.f, 50.f, -50.f},
-        // {-300.f, 300.f, -300.f},
-        // {-550.f, 550.f, -550.f},
-        // {-800.f, 800.f, -800.f},
-        //
-        // // 011 octant 3 x ∈ [0, 1000] y ∈ [0, 1000] z ∈ [-1000, 0)
-        // {50.f, 50.f, -50.f},
-        // {300.f, 300.f, -300.f},
-        // {550.f, 550.f, -550.f},
-        // {800.f, 800.f, -800.f},
-        //
-        // // 100 octant 4 x ∈ [-1000, 0) y ∈ [-1000, 0) z ∈ [0, 1000]
-        // {-50.f, -50.f, 50.f},
-        // {-300.f, -300.f, 300.f},
-        // {-550.f, -550.f, 550.f},
-        // {-800.f, -800.f, 800.f},
-        //
-        // // 101 octant 5 x ∈ [0, 1000] y ∈ [-1000, 0) z ∈ [0, 1000]
-        // {50.f, -50.f, 50.f},
-        // {300.f, -300.f, 300.f},
-        // {550.f, -550.f, 550.f},
-        // {800.f, -800.f, 800.f},
-        //
-        // // 110 octant 6 x ∈ [-1000, 0) y ∈ [0, 1000] z ∈ [0, 1000]
-        // {-50.f, 50.f, 50.f},
-        // {-300.f, 300.f, 300.f},
-        // {-550.f, 550.f, 550.f},
-        // {-800.f, 800.f, 800.f},
-        //
-        // // 111 octant 7 x ∈ [0, 1000] y ∈ [0, 1000] z ∈ [0, 1000]
-        // {50.f, 50.f, 50.f},
-        // {300.f, 300.f, 300.f},
-        // {550.f, 550.f, 550.f},
-        // {800.f, 800.f, 800.f},
-    };
-
-
+    size_t n = 1000'000;
+    std::vector<Particle> particles = generateParticles(n);
+    std::cout << "123";
 
     //size_t n = 1000;
     //std::vector<Particle> particles = generateParticles(n);
@@ -285,7 +279,7 @@ int main() {
     tree.buildTree(particles);
 
     for (auto &p : particles) {
-        std::cout << p.x << " " << p.y << " " << p.z << '\n';
+     //   std::cout << p.x << " " << p.y << " " << p.z << '\n';
     }
 
     bool monotone = true;
@@ -301,20 +295,21 @@ int main() {
     for (auto &p : particles) {
         //std::cout << p.Z_CODE << "\n";
        // std::cout << std::bitset<64>(p.Z_CODE) << "\n";
-        std::cout << "(" << p.x << ", " << p.y << ", " << p.z << ")    ";
+       // std::cout << "(" << p.x << ", " << p.y << ", " << p.z << ")    ";
         std::bitset<64> bits(p.Z_CODE);
         for (int i = 63; i >= 0; --i)
         {
-            std::cout << bits[i];
-            if (i == 63 || (i % 3 == 0 && i != 0))std::cout << ' ';
+          //  std::cout << bits[i];
+          //  if (i == 63 || (i % 3 == 0 && i != 0))std::cout << ' ';
         }
-        std::cout << '\n';
+      //  std::cout << '\n';
     }
     std::cout << "Monotonic Z_CODE: " << (monotone ? "OK" : "FAIL") << "\n\n\n";
 
     std::cout << "testing Tree structure: \n";
 
     Octtree octtree;
+    std::cout << "ADSADA";
 
     float timeStep = 100'000.f;
     while (true) {
@@ -344,11 +339,12 @@ int main() {
             p.leapFrogPosStep(timeStep);
         }
 
-        //for (auto &p : particles) std::cout << p.x << "\n";
+        Particle p = particles[0];
+        std::cout << p.x << "\n";
 
-        std::this_thread::sleep_for(
-              std::chrono::milliseconds(16)
-          );
+        // std::this_thread::sleep_for(
+        //       std::chrono::milliseconds(16)
+        //   );
     }
 
     //cudaApiTest();

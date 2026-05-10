@@ -150,6 +150,7 @@ void Octtree::computeMassDistribution(const std::vector<Particle> &particles) {
             }
 
             for (int p = node.start; p < node.end; p++) {
+                if (node.start == -1 || node.end == -1) continue;   // TODO: maybe redundant
                 const Particle &particle = particles[p];
 
                 node.mass += particle.mass;
