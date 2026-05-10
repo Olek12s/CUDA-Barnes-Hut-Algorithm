@@ -2,12 +2,13 @@
 #define OCTTREE_H
 #include <vector>
 #include <iostream>
+#include <array>
+#include <algorithm>
 #include "Particle.h"
 
 
 struct Node {
-    Node(int start, int end, int firstChild, bool isLeaf) : start(start), end(end), firstChild(firstChild), isLeaf(isLeaf) {}
-
+    Node(int start, int end, int firstChild, float size, bool isLeaf) : start(start), end(end), firstChild(firstChild), size(size), isLeaf(isLeaf) {}
 
     int start, end;         // start and end index of bodies belonging to the node. Start/end refer to ALREADY SORTED particles (by Morton code)
 
@@ -17,17 +18,21 @@ struct Node {
     float size;                         // size of current node (length of the edge)
     float centerX, centerY, centerZ;    // center of the octant
 
-    unsigned int firstChild;                     // index of first child of current node. Other children's indices are firstchild + n, where n < 8. -1 if child is absent
+    int firstChild;                     // index of first child of current node. Other children's indices are firstchild + n, where n < 8. -1 if child is absent
     bool isLeaf;
 
-    bool isEmppty() const;
+    bool isEmpty() const;
 };
 
 class Octtree {
     std::vector<Node> nodes;    // whole tree structure sits here with all the informations
     int rootNode = 0;   // root node has always index 0
+    float rootSize = 0;         // size of root node (length of the edge)
 
 public:
+
+    void findRootSize(std::vector<Particle> &particles);
+
 
     // For the currently processed node (ONLY ONE NODE) range [start, end)
     // finds index ranges belonging to its 8 children at Vec<Particles> vector.
@@ -49,8 +54,10 @@ public:
     // clears nodes vector and reconstructs its content based on given vector in TOP-DOWN range split nature
     void buildTree(std::vector<Particle> &sortedParticles);
 
-    // computes
+    // computes mass dist. among tree nodes in BOTTOM-UP nature. If node leaf - bodies of this node are taking in calculation, else calculate node's children first
     void computeMassDistribution(const std::vector<Particle>& particles);
+
+    void computeForcesAffectingParticle(int nodeIndex, Particle& particle, float& ax, float& ay, float& az, const std::vector<Particle>& particles);
 
     // void insertBodies();
     // void updateMassDistribution();

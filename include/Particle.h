@@ -6,7 +6,9 @@
 #define PARTICLE_H
 
 struct Particle {
-    float x, y, z;
+    float x, y, z;      // position
+    float vx, vy, vz;   // velocity
+    float ax, ay, az;   // acceleration
     float mass;
     uint64_t Z_CODE;
 };
