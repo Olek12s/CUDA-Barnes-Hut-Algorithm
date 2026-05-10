@@ -50,7 +50,7 @@ public:
     void buildTree(std::vector<Particle> &sortedParticles);
 
     // computes
-    void computeMassDistribution();
+    void computeMassDistribution(const std::vector<Particle>& particles);
 
     // void insertBodies();
     // void updateMassDistribution();

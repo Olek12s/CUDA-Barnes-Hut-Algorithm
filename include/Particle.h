@@ -7,6 +7,7 @@
 
 struct Particle {
     float x, y, z;
+    float mass;
     uint64_t Z_CODE;
 };
 

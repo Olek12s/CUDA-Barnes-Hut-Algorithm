@@ -89,10 +89,63 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
     }
 }
 
-void Octtree::computeMassDistribution() {
+void Octtree::computeMassDistribution(const std::vector<Particle> &particles) {
         if (nodes.empty()) {
             std::cout << "Nodes are empty.\n";
             return;
         }
 
+    for (int i = nodes.size() - 1; i >= 0; i--) {
+        Node &node = nodes[i];
+
+        node.mass = 0;
+        node.mcx = node.mcy = node.mcz = 0;
+
+        // if leaf - calculate node's mass and COM based on particles inside that node
+        if (node.isLeaf) {
+            if (node.isEmppty()) {                  // TODO: test it by commenting out
+                continue;
+            }
+
+            for (int p = node.start; p < node.end; p++) {
+                const Particle &particle = particles[p];
+
+                node.mass += particle.mass;
+                node.mcx += particle.x * particle.mass;
+                node.mcy += particle.y * particle.mass;
+                node.mcz += particle.z * particle.mass;
+            }
+            if (node.mass > 0)
+            {
+                node.mcx /= node.mass;
+                node.mcy /= node.mass;
+                node.mcz /= node.mass;
+            }
+        }
+        else    // else calculate first node's children and accumulate COMs
+        {
+            float totalMass = 0;
+            float cx = 0, cy = 0, cz = 0;
+
+            int first = node.firstChild;
+
+            for (int j = 0; j < 8; j++)
+            {
+                Node &child = nodes[first + j];
+
+                totalMass += child.mass;
+                cx += child.mcx * child.mass;
+                cy += child.mcy * child.mass;
+                cz += child.mcz * child.mass;
+            }
+            node.mass = totalMass;
+
+            if (totalMass > 0)
+            {
+                node.mcx = cx / totalMass;
+                node.mcy = cy / totalMass;
+                node.mcz = cz / totalMass;
+            }
+        }
+    }
 }
