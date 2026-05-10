@@ -6,6 +6,8 @@
 #include <bitset>
 #include <random>
 #include <utility>
+#include <thread>
+#include <chrono>
 
 #include "Octtree.h"
 #include "src/cuda/cuda.cuh"
@@ -309,6 +311,45 @@ int main() {
         std::cout << '\n';
     }
     std::cout << "Monotonic Z_CODE: " << (monotone ? "OK" : "FAIL") << "\n\n\n";
+
+    std::cout << "testing Tree structure: \n";
+
+    Octtree octtree;
+
+    float timeStep = 100'000.f;
+    while (true) {
+        // 1. bounds
+        auto bounds = findMinMax(particles);
+
+        // 2. recompute morton codes
+        computeMortonCodes(particles, bounds);
+
+        // 3. sort by morton
+        std::sort(particles.begin(), particles.end(), comp);
+
+        // 4. rebuild tree
+        octtree.buildTree(particles);
+
+        // 5. reset accelerations
+        for (auto &p : particles) {
+            p.ax = p.ay = p.az = 0;
+        }
+
+        // 6. compute forces
+        for (auto &p : particles) octtree.computeForcesAffectingParticle(0, p, p.ax, p.ay, p.az, particles);
+
+        // 7. integrate w/ leapfrog
+        for (auto &p : particles) {
+            p.leapFrogVelStep(timeStep * 0.5f);
+            p.leapFrogPosStep(timeStep);
+        }
+
+        //for (auto &p : particles) std::cout << p.x << "\n";
+
+        std::this_thread::sleep_for(
+              std::chrono::milliseconds(16)
+          );
+    }
 
     //cudaApiTest();
     //glTest();
