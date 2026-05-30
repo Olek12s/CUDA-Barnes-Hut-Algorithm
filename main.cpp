@@ -146,7 +146,7 @@ std::vector<Particle> generateParticles(size_t n)
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(-1000.0f, 1000.0f);
+    std::uniform_real_distribution<float> dist(-100000.0f, 100000.0f);
 
     for (size_t i = 0; i < n; i++)
     {
@@ -265,7 +265,7 @@ int main() {
     //     // {800.f, 800.f, 800.f},
     // };
 
-    size_t n = 10;
+    size_t n = 100'000;
     std::vector<Particle> particles = generateParticles(n);
     std::cout << "123";
 
@@ -311,7 +311,7 @@ int main() {
 
     Octtree octtree;
 
-    float timeStep = 10000'000.f;
+    float timeStep = 10000'00.f;
     while (true) {
 
         // 1. integrate w/ leapfrog (velocity step 1/2)
@@ -363,6 +363,7 @@ int main() {
         //   );
 
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        std::cout << ".\n";
     }
 
     //cudaApiTest();
