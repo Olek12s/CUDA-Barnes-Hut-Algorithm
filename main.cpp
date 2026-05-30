@@ -355,12 +355,14 @@ int main() {
 
         Particle p = particles[0];
         //std::cout << p.x << "\n";
-        std::cout << p.toString() << "\n";
+        //std::cout << p.toString() << "\n";
         //printf("posX: %.9f\n", p.x);
 
         // std::this_thread::sleep_for(
         //       std::chrono::milliseconds(16)
         //   );
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 
     //cudaApiTest();
