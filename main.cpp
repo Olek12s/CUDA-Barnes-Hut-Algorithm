@@ -155,6 +155,7 @@ std::vector<Particle> generateParticles(size_t n)
         p.x = dist(gen);
         p.y = dist(gen);
         p.z = dist(gen);
+        p.mass = 1;
 
         particles.push_back(p);
     }
@@ -336,7 +337,6 @@ int main() {
 
         //
         octtree.computeMassDistribution(particles);
-
         // 6. reset accelerations
         for (auto &p : particles) {
             p.ax = p.ay = p.az = 0;

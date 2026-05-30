@@ -45,7 +45,7 @@ struct Particle {
         return std::format(
             "Part{{pos=({:.6f}, {:.6f}, {:.6f}), "
             "vel=({:.11f}, {:.11f}, {:.11f}), "
-            "acc=({:.11f}, {:.11f}, {:.11f}), "
+            "acc=({:.32f}, {:.32f}, {:.32f}), "
             "mass={:.2f}}}",
             x, y, z,
             vx, vy, vz,
