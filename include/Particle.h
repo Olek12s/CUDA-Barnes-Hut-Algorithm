@@ -9,8 +9,8 @@ struct Particle {
     float x, y, z;      // position
     float vx, vy, vz;   // velocity
     float ax, ay, az;   // acceleration
-    float mass;
-    uint64_t Z_CODE;
+    float mass;         // mass
+    uint64_t Z_CODE;    // morton code
 
 
     void euler(float timeStep) {

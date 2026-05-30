@@ -264,7 +264,7 @@ int main() {
     //     // {800.f, 800.f, 800.f},
     // };
 
-    size_t n = 1000'000;
+    size_t n = 10;
     std::vector<Particle> particles = generateParticles(n);
     std::cout << "123";
 
@@ -311,36 +311,49 @@ int main() {
     Octtree octtree;
     std::cout << "ADSADA";
 
-    float timeStep = 100'000.f;
+    float timeStep = 10.f;
     while (true) {
-        // 1. bounds
+
+        // 1. integrate w/ leapfrog (velocity step 1/2)
+        for (auto &p : particles) {
+            p.leapFrogVelStep(timeStep * 0.5f);
+        }
+        // 1.5 integrate w/ leapfrog (position step)
+        for (auto &p : particles) {
+            p.leapFrogPosStep(timeStep);
+        }
+
+        // 2. bounds
         auto bounds = findMinMax(particles);
 
-        // 2. recompute morton codes
+        // 3. recompute morton codes
         computeMortonCodes(particles, bounds);
 
-        // 3. sort by morton
+        // 4. sort by morton
         std::sort(particles.begin(), particles.end(), comp);
 
-        // 4. rebuild tree
+        // 5. rebuild tree
         octtree.buildTree(particles);
 
-        // 5. reset accelerations
+        // 6. reset accelerations
         for (auto &p : particles) {
             p.ax = p.ay = p.az = 0;
         }
 
-        // 6. compute forces
-        for (auto &p : particles) octtree.computeForcesAffectingParticle(0, p, p.ax, p.ay, p.az, particles);
+        // 7. compute forces
+        for (auto &p : particles) {
+            octtree.computeForcesAffectingParticle(0, p, p.ax, p.ay, p.az, particles);
+        }
 
-        // 7. integrate w/ leapfrog
+        // 6. integrate w/ leapfrog (velocity step 2/2)
         for (auto &p : particles) {
             p.leapFrogVelStep(timeStep * 0.5f);
             p.leapFrogPosStep(timeStep);
         }
 
         Particle p = particles[0];
-        std::cout << p.x << "\n";
+        //std::cout << p.x << "\n";
+        printf("%.9f\n", p.x);
 
         // std::this_thread::sleep_for(
         //       std::chrono::milliseconds(16)

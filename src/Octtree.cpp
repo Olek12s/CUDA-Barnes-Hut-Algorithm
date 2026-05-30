@@ -12,7 +12,7 @@ bool Node::isEmpty() const {
 }
 
 
-void Octtree::findRootSize(std::vector<Particle> &particles) {
+void Octtree::findRootSize(const std::vector<Particle> &particles) {
     std::array<std::pair<float, float>, 3> bounds =
    {{
        {std::numeric_limits<float>::max(),
@@ -44,9 +44,14 @@ void Octtree::findRootSize(std::vector<Particle> &particles) {
     float dz = bounds[2].second - bounds[2].first;
 
     rootSize = std::max({dx, dy, dz});
+
+    nodes[0].centerX = dx;
+    nodes[0].centerX = dy;
+    nodes[0].centerX = dz;
     if (rootSize == 0.0f) {
         rootSize = 1.0f;    // edge case where all elements have same position
     }
+
 }
 
 
@@ -76,10 +81,10 @@ void Octtree::findChildRanges(const std::vector<Particle> &particles, int start,
 void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
     nodes.clear();  // clear off nodes vector
 
-    findRootSize(sortedParticles);  // find rootSize
-
     Node root(0, sortedParticles.size(), -1, rootSize, true);
     nodes.push_back(root);
+
+    findRootSize(sortedParticles);  // find rootSize
 
     std::stack<std::pair<int, int>> stack; // first - nodeIndex, second - level // stack of nodes
     stack.push({0, 0});
