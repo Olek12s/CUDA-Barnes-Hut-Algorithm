@@ -5,6 +5,8 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
+#include <format>
+
 struct Particle {
     float x, y, z;      // position
     float vx, vy, vz;   // velocity
@@ -27,12 +29,29 @@ struct Particle {
         vx += ax * halfTimeStep;
         vy += ay * halfTimeStep;
         vz += az * halfTimeStep;
+        //printf("%.15f\n", az);
+        //std::cout << "Acc: " << ax << "\n";
     }
 
     void leapFrogPosStep(float timeStep) {
+        //printf("before: %.15f\n", vx);
         x += vx * timeStep;
         y += vy * timeStep;
         z += vz * timeStep;
+       // printf("after: %.15f\n", vx);
+    }
+
+    std::string toString() const {
+        return std::format(
+            "Part{{pos=({:.6f}, {:.6f}, {:.6f}), "
+            "vel=({:.11f}, {:.11f}, {:.11f}), "
+            "acc=({:.11f}, {:.11f}, {:.11f}), "
+            "mass={:.2f}}}",
+            x, y, z,
+            vx, vy, vz,
+            ax, ay, az,
+            mass
+        );
     }
 };
 

@@ -12,7 +12,7 @@ bool Node::isEmpty() const {
 }
 
 
-void Octtree::findRootSize(const std::vector<Particle> &particles) {
+float Octtree::findRootSize(const std::vector<Particle> &particles) {
     std::array<std::pair<float, float>, 3> bounds =
    {{
        {std::numeric_limits<float>::max(),
@@ -43,15 +43,17 @@ void Octtree::findRootSize(const std::vector<Particle> &particles) {
     float dy = bounds[1].second - bounds[1].first;
     float dz = bounds[2].second - bounds[2].first;
 
-    rootSize = std::max({dx, dy, dz});
+    float rootSize = std::max({dx, dy, dz});
 
-    nodes[0].centerX = dx;
-    nodes[0].centerX = dy;
-    nodes[0].centerX = dz;
+    // nodes[rootNode].centerX = 1;
+    // nodes[rootNode].centerY = 2;
+    // nodes[rootNode].centerZ = 3;
+
+    // nodes[rootNode].size = rootSize;
     if (rootSize == 0.0f) {
         rootSize = 1.0f;    // edge case where all elements have same position
     }
-
+    return rootSize;
 }
 
 
@@ -80,11 +82,10 @@ void Octtree::findChildRanges(const std::vector<Particle> &particles, int start,
 
 void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
     nodes.clear();  // clear off nodes vector
+    float rootSize = findRootSize(sortedParticles);  // find rootSize
 
     Node root(0, sortedParticles.size(), -1, rootSize, true);
     nodes.push_back(root);
-
-    findRootSize(sortedParticles);  // find rootSize
 
     std::stack<std::pair<int, int>> stack; // first - nodeIndex, second - level // stack of nodes
     stack.push({0, 0});
@@ -96,7 +97,7 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
         int level = stack.top().second;
         stack.pop();
 
-        Node &node = nodes[nodeIndex];
+        Node node = nodes[nodeIndex];
         int count = nodes[nodeIndex].end - nodes[nodeIndex].start;
 
         if (count <= SPLIT_AT_LEAF_SIZE || level >= MAX_MORTON_BITS) {
@@ -105,7 +106,7 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
             node.firstChild = -1;
             continue;
         }
-        std::cout << "Exceeded MAX_LEAF_SIZE. Dividing node into 8 children \n";
+        //std::cout << "Exceeded MAX_LEAF_SIZE. Dividing node into 8 children \n";
 
         int childStart[8];
         int childEnd[8];
@@ -118,7 +119,6 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
         node.firstChild = nodes.size();
         node.isLeaf = false;
         float childSize = node.size * 0.5f;
-
         for (int i = 0; i < 8; i++)
         {
             if (childStart[i] == -1)
@@ -137,14 +137,13 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
 }
 
 void Octtree::computeMassDistribution(const std::vector<Particle> &particles) {
-        if (nodes.empty()) {
-            std::cout << "Nodes are empty.\n";
-            return;
-        }
+    if (nodes.empty()) {
+        std::cout << "Nodes are empty.\n";
+        return;
+    }
 
     for (int i = nodes.size() - 1; i >= 0; i--) {
-        Node &node = nodes[i];
-
+        Node& node = nodes[i];
         node.mass = 0;
         node.mcx = node.mcy = node.mcz = 0;
 

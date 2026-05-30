@@ -27,11 +27,10 @@ struct Node {
 class Octtree {
     std::vector<Node> nodes;    // whole tree structure sits here with all the informations
     int rootNode = 0;           // root node has always index 0
-    float rootSize = 0;         // size of root node (length of the edge)
 
 public:
 
-    void findRootSize(const std::vector<Particle> &particles);
+    float findRootSize(const std::vector<Particle> &particles);
 
 
     // For the currently processed node (ONLY ONE NODE) range [start, end)

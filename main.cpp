@@ -275,8 +275,8 @@ int main() {
     computeMortonCodes(particles, bounds);
     std::sort(particles.begin(), particles.end(), comp);
 
-    Octtree tree;
-    tree.buildTree(particles);
+    //Octtree tree;
+    //tree.buildTree(particles);
 
     for (auto &p : particles) {
      //   std::cout << p.x << " " << p.y << " " << p.z << '\n';
@@ -309,9 +309,8 @@ int main() {
     std::cout << "testing Tree structure: \n";
 
     Octtree octtree;
-    std::cout << "ADSADA";
 
-    float timeStep = 10.f;
+    float timeStep = 10000'000.f;
     while (true) {
 
         // 1. integrate w/ leapfrog (velocity step 1/2)
@@ -335,6 +334,9 @@ int main() {
         // 5. rebuild tree
         octtree.buildTree(particles);
 
+        //
+        octtree.computeMassDistribution(particles);
+
         // 6. reset accelerations
         for (auto &p : particles) {
             p.ax = p.ay = p.az = 0;
@@ -353,7 +355,8 @@ int main() {
 
         Particle p = particles[0];
         //std::cout << p.x << "\n";
-        printf("%.9f\n", p.x);
+        std::cout << p.toString() << "\n";
+        //printf("posX: %.9f\n", p.x);
 
         // std::this_thread::sleep_for(
         //       std::chrono::milliseconds(16)
