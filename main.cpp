@@ -10,6 +10,7 @@
 #include <chrono>
 
 #include "Octtree.h"
+#include "Renderer.h"
 #include "src/cuda/cuda.cuh"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
@@ -168,7 +169,6 @@ void buildTree(std::vector<Particle> &sortedParticles) {
 }
 
 int main() {
-    std::cout << "test11\n";
 
     // Packets for tree are distributed as:
 
@@ -265,9 +265,8 @@ int main() {
     //     // {800.f, 800.f, 800.f},
     // };
 
-    size_t n = 100'000;
+    size_t n = 100'0;
     std::vector<Particle> particles = generateParticles(n);
-    std::cout << "123";
 
     //size_t n = 1000;
     //std::vector<Particle> particles = generateParticles(n);
@@ -305,10 +304,11 @@ int main() {
         }
       //  std::cout << '\n';
     }
-    std::cout << "Monotonic Z_CODE: " << (monotone ? "OK" : "FAIL") << "\n\n\n";
+   // std::cout << "Monotonic Z_CODE: " << (monotone ? "OK" : "FAIL") << "\n\n\n";
 
-    std::cout << "testing Tree structure: \n";
 
+    Renderer renderer;
+    renderer.initGLFW();
     Octtree octtree;
 
     float timeStep = 10000'00.f;
@@ -363,7 +363,8 @@ int main() {
         //   );
 
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
-        std::cout << ".\n";
+        std::cout << "." << std::flush;
+
     }
 
     //cudaApiTest();

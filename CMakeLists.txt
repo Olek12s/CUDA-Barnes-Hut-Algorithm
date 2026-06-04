@@ -16,6 +16,8 @@ add_executable(Barnes-Hut-Licencjat
         include/Octtree.h
         include/Config.h
         include/Particle.h
+        src/Renderer.cpp
+        include/Renderer.h
 )
 
 
