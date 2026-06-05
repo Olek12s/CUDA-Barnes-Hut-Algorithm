@@ -8,7 +8,6 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 
 #define uint unsigned int
 
