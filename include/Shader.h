@@ -14,7 +14,7 @@
 
 class Shader {
 public:
-    uint ID;    // Shader program unique ID
+    uint ID;    // Shader program unique ID. ID is a handler for linked openGL Shader program ready to use.
 
     Shader() {}
 
