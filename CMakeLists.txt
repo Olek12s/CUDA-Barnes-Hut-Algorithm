@@ -18,6 +18,7 @@ add_executable(Barnes-Hut-Licencjat
         include/Particle.h
         src/Renderer.cpp
         include/Renderer.h
+        include/Shader.h
 )
 
 
