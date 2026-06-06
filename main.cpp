@@ -160,7 +160,16 @@ std::vector<Particle> generateParticles(size_t n)
 
         particles.push_back(p);
     }
-    particles.push_back(Particle(0.3, 0.5 , 0));
+    // particles.push_back(Particle(0.3, 0.5 , 0));
+    // particles.push_back(Particle(0.2, 0.1 , 0.7));
+    // particles.push_back(Particle(0.7, 0.7 , 0.5));
+    // particles.push_back(Particle(0.2, 0.5 , 0));
+    // particles.push_back(Particle(0.1, 0.1 , 0.7));
+    particles.push_back(Particle(0.5, -0.5 , 0.5));
+    particles.push_back(Particle(-0.5, 0.5 , 0.5));
+    particles.push_back(Particle(-0.5, -0.5 , 0.5));
+    particles.push_back(Particle(0.5, 0.5 , 0.5));
+    particles.push_back(Particle(0.0, 0.0 , 0.5, 1000000000.f));
     return particles;
 }
 
@@ -265,7 +274,7 @@ int main() {
     //     // {800.f, 800.f, 800.f},
     // };
 
-    size_t n = 0;
+    size_t n = 000;
     std::vector<Particle> particles = generateParticles(n);
 
     auto bounds = findMinMax(particles);
@@ -300,13 +309,13 @@ int main() {
     renderer.init();
     Octtree octtree;
 
-    float timeStep = 10.f;
+    float timeStep = 100.f;
     while (!renderer.isTerminated) {
         renderer.frameTick();
 
         // 1. integrate w/ leapfrog (velocity step 1/2)
         for (auto &p : particles) {
-            std::cout << p.toString() << "\n";
+            std::cout << "mass=" << p.mass << " ax=" << p.ax << "\n";
             p.leapFrogVelStep(timeStep * 0.5f);
         }
         // 1.5 integrate w/ leapfrog (position step)

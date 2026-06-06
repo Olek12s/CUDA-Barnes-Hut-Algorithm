@@ -19,6 +19,7 @@ struct Particle {
 
     Particle(): x(0), y(0), z(0),vx(0), vy(0), vz(0),ax(0), ay(0), az(0),mass(0),Z_CODE(0) {}
     Particle(float x, float y, float z): x(x),y(y),z(z),  vx(0), vy(0), vz(0),ax(0), ay(0), az(0),mass(1.0f), Z_CODE(0) {}
+    Particle(float x, float y, float z, float m): x(x),y(y),z(z),  vx(0), vy(0), vz(0),ax(0), ay(0), az(0),mass(m), Z_CODE(0) {}
 
     void euler(float timeStep) {
         vx += ax * timeStep;
@@ -33,7 +34,7 @@ struct Particle {
     void leapFrogVelStep(float halfTimeStep) {
         vx += ax * halfTimeStep;
         vy += ay * halfTimeStep;
-        vz += az * halfTimeStep;
+       // vz += az * halfTimeStep;
         //printf("%.15f\n", az);
         //std::cout << "Acc: " << ax << "\n";
     }
@@ -42,7 +43,7 @@ struct Particle {
         //printf("before: %.15f\n", vx);
         x += vx * timeStep;
         y += vy * timeStep;
-        z += vz * timeStep;
+       // z += vz * timeStep;
        // printf("after: %.15f\n", vx);
     }
 

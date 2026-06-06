@@ -225,9 +225,12 @@ void Octtree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, 
         float factor = G * node.mass * invDist3;
 
         // output vector
-        ax += dx * factor;
-        ay += dy * factor;
-        az += dz * factor;
+        ax += dx * factor / particle.mass;
+        ay += dy * factor / particle.mass;
+        az += dz * factor / particle.mass;
+        // ax += dx * factor;
+        // ay += dy * factor;
+        // az += dz * factor;
     }
     else {  // traverse children TOP-BOTTOM
         for (int i = 0; i < 8; i++)
