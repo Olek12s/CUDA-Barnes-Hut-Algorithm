@@ -5,15 +5,29 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include <vector>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-class Renderer {
-    GLFWwindow* window;
+#include "Particle.h"
+#include "Shader.h"
 
+class Renderer {
+private:
+    std::vector<Particle>& particles;
+    GLFWwindow* window;
+    Shader shader;
+    unsigned int VBO;   // Vertex Buffer Object
+    unsigned int VAO;   // Vertex Array Object
+
+    static void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // callback each time a window is resized
+    void processInput(GLFWwindow* window);
 public:
-    void initGLFW();
-    void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // callback each time a window is resized
+    Renderer(std::vector<Particle> &particles): particles(particles) {}
+    void init();
+    void frameTick();
+
+    bool isTerminated = false;
 };
 
 
