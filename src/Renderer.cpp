@@ -88,6 +88,7 @@ void Renderer::frameTick() {
     }
 
     processInput(window);   // keyboard input
+    update(window);         // process camera
 
     // ##### rendering calls ##### //
     glClearColor(0,0,0, 1.0f);
@@ -104,7 +105,7 @@ void Renderer::frameTick() {
                      particles.size() * sizeof(Particle),
                      particles.data());
 
-    glPointSize(8.0f);
+    glPointSize(4.0f);
     glDrawArrays(GL_POINTS, 0, particles.size());
 
 
@@ -113,6 +114,8 @@ void Renderer::frameTick() {
 
     std::cout << "#";
 }
+
+
 
 
 

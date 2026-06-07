@@ -165,11 +165,13 @@ std::vector<Particle> generateParticles(size_t n)
     // particles.push_back(Particle(0.7, 0.7 , 0.5));
     // particles.push_back(Particle(0.2, 0.5 , 0));
     // particles.push_back(Particle(0.1, 0.1 , 0.7));
-    particles.push_back(Particle(0.5, -0.5 , 0.5));
-    particles.push_back(Particle(-0.5, 0.5 , 0.5));
-    particles.push_back(Particle(-0.5, -0.5 , 0.5));
-    particles.push_back(Particle(0.5, 0.5 , 0.5));
-    particles.push_back(Particle(0.0, 0.0 , 0.5, 1000000000.f));
+    float v = 0.0000486f;
+
+    particles.push_back(Particle( 0.3f,-0.3f,0.5f,1.0f,  v,  v,0.0f));
+    particles.push_back(Particle(-0.3f, 0.3f,0.5f,1.0f, -v, -v,0.0f));
+    particles.push_back(Particle(-0.3f,-0.3f,0.5f,1.0f,  v, -v,0.0f));
+    particles.push_back(Particle( 0.3f, 0.3f,0.5f,1.0f, -v,  v,0.0f));
+    particles.push_back(Particle(0.0, 0.0 , 0.5, 150.f));
     return particles;
 }
 
@@ -315,7 +317,7 @@ int main() {
 
         // 1. integrate w/ leapfrog (velocity step 1/2)
         for (auto &p : particles) {
-            std::cout << "mass=" << p.mass << " ax=" << p.ax << "\n";
+            //std::cout << "mass=" << p.mass << " ax=" << p.ax << "\n";
             p.leapFrogVelStep(timeStep * 0.5f);
         }
         // 1.5 integrate w/ leapfrog (position step)
@@ -350,7 +352,7 @@ int main() {
         // 6. integrate w/ leapfrog (velocity step 2/2)
         for (auto &p : particles) {
             p.leapFrogVelStep(timeStep * 0.5f);
-            p.leapFrogPosStep(timeStep);
+            //p.leapFrogPosStep(timeStep);  posstep should appear twice
         }
 
         Particle p = particles[0];

@@ -9,6 +9,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Camera.h"
 #include "Particle.h"
 #include "Shader.h"
 
@@ -19,6 +20,7 @@ private:
     Shader shader;
     unsigned int VBO;   // Vertex Buffer Object
     unsigned int VAO;   // Vertex Array Object
+    Camera camera;
 
     static void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // callback each time a window is resized
     void processInput(GLFWwindow* window);

@@ -97,13 +97,17 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
         int level = stack.top().second;
         stack.pop();
 
-        Node node = nodes[nodeIndex];
+       // Node node = nodes[nodeIndex];  //TODO: might be reference
+       // int count = nodes[nodeIndex].end - nodes[nodeIndex].start;
         int count = nodes[nodeIndex].end - nodes[nodeIndex].start;
 
         if (count <= SPLIT_AT_LEAF_SIZE || level >= MAX_MORTON_BITS) {
             if (level >= MAX_MORTON_BITS) std::cout << "Level over " << MAX_MORTON_BITS << "." << " \n";
-            node.isLeaf = true;
-            node.firstChild = -1;
+            // node.isLeaf = true;
+            // node.firstChild = -1;
+            // continue;
+            nodes[nodeIndex].isLeaf = true;
+            nodes[nodeIndex].firstChild = -1;
             continue;
         }
         //std::cout << "Exceeded MAX_LEAF_SIZE. Dividing node into 8 children \n";
@@ -111,14 +115,19 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
         int childStart[8];
         int childEnd[8];
 
-        findChildRanges(sortedParticles, node.start, node.end, level, childStart, childEnd);
+        //findChildRanges(sortedParticles, node.start, node.end, level, childStart, childEnd);
+        findChildRanges(sortedParticles, nodes[nodeIndex].start, nodes[nodeIndex].end, level, childStart, childEnd);
 
         // Create up to 8 child nodes representing spatial octants
         // Some children may be empty if no particles fall into that region
 
-        node.firstChild = nodes.size();
-        node.isLeaf = false;
-        float childSize = node.size * 0.5f;
+        //node.firstChild = nodes.size();
+        //node.isLeaf = false;
+        //float childSize = node.size * 0.5f;
+        nodes[nodeIndex].firstChild = nodes.size();
+        nodes[nodeIndex].isLeaf = false;
+
+        float childSize = nodes[nodeIndex].size * 0.5f;
         for (int i = 0; i < 8; i++)
         {
             if (childStart[i] == -1)
@@ -130,7 +139,8 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
                 nodes.push_back(Node(childStart[i], childEnd[i], -1, childSize, true));   // leaf with data (no division yet thus firstChild -1)
             }
             if (childStart[i] != -1) {  // ignore mepty nodes
-                stack.push({node.firstChild + i, level + 1});   // push processed node on stack
+               // stack.push({node.firstChild + i, level + 1});   // push processed node on stack
+                stack.push({nodes[nodeIndex].firstChild + i, level + 1});
             }
         }
     }
@@ -225,12 +235,12 @@ void Octtree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, 
         float factor = G * node.mass * invDist3;
 
         // output vector
-        ax += dx * factor / particle.mass;
-        ay += dy * factor / particle.mass;
-        az += dz * factor / particle.mass;
-        // ax += dx * factor;
-        // ay += dy * factor;
-        // az += dz * factor;
+        // ax += dx * factor / particle.mass;
+        // ay += dy * factor / particle.mass;
+        // az += dz * factor / particle.mass;
+        ax += dx * factor;
+        ay += dy * factor;
+        az += dz * factor;
     }
     else {  // traverse children TOP-BOTTOM
         for (int i = 0; i < 8; i++)

@@ -6,6 +6,13 @@ out vec4 fragColor;
 
 void main()
 {
-    //fragColor = vec4(0f, 0.1f, 0.9f, 1.0f);
-    fragColor = vec4(color, 1.0);
+    vec2 uv = gl_PointCoord * 2.0 - 1.0; // [-1, 1]
+
+    float dist = dot(uv, uv);
+
+    if (dist > 1.0)
+        discard;
+
+    vec3 color = vec3(0.2, 0.8, 0.9); // albo velocity itd.
+    gl_FragColor = vec4(color, 1.0);
 }

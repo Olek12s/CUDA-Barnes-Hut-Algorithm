@@ -19,6 +19,8 @@ add_executable(Barnes-Hut-Licencjat
         src/Renderer.cpp
         include/Renderer.h
         include/Shader.h
+        src/Camera.cpp
+        include/Camera.h
 )
 
 
