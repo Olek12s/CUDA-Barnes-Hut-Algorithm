@@ -9,17 +9,27 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 class Camera {
 public:
     Camera();   // init with default position (0,0,0)
     Camera(float x, float y, float z);
     void update(GLFWwindow* window);
-
-private:
+    void keyboardInput(GLFWwindow *window);
+    void mouseInput(float x, float y);
     glm::vec3 getUpDirection();
     glm::vec3 getRightDirection();
+    glm::mat4 getViewMatrix();
+    glm::mat4 getProjectionMatrix(float aspectRatio) const;
+private:
+    float pitch;
+    float yaw;
 
+    float lastX;
+    float lastY;
+    bool mouseMoved;
+    float fov;                  // field of view
     glm::vec3 position;         // position of camera in world
     glm::vec3 viewDirection;    // direction of looking, default (1,0,0)
     glm::mat4 view;             // View matrix which transforms world space into camera (view) space

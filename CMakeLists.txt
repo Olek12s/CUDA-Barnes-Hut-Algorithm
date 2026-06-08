@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.31)
-project(Barnes-Hut-Licencjat LANGUAGES C CXX CUDA)
+project(Barnes-Hut-Licencjat LANGUAGES C CXX)
 
-set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_CXX_STANDARD 20)
 
 add_library(glad STATIC glad.c)
@@ -11,7 +10,6 @@ target_include_directories(glad PUBLIC "${CMAKE_SOURCE_DIR}/include")
 
 add_executable(Barnes-Hut-Licencjat
         main.cpp
-        src/cuda/cuda.cu
         src/Octtree.cpp
         include/Octtree.h
         include/Config.h
@@ -21,11 +19,6 @@ add_executable(Barnes-Hut-Licencjat
         include/Shader.h
         src/Camera.cpp
         include/Camera.h
-)
-
-
-set_target_properties(Barnes-Hut-Licencjat PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON
 )
 
 

@@ -21,8 +21,10 @@ private:
     unsigned int VBO;   // Vertex Buffer Object
     unsigned int VAO;   // Vertex Array Object
     Camera camera;
+    bool mouseCaptured = true;
 
     static void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // callback each time a window is resized
+    static void mouse_callback(GLFWwindow* window, double x, double y);
     void processInput(GLFWwindow* window);
 public:
     Renderer(std::vector<Particle> &particles): particles(particles) {}

@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-static constexpr int SPLIT_AT_LEAF_SIZE = 1;
+static constexpr int SPLIT_AT_LEAF_SIZE = 128;
 constexpr int MAX_MORTON_BITS = 21;
 float EPSILON = 0.15;   // smaller - sharper physics | larger - smoother and more stable physics | Prevents infinite forces when distance r ~0. Prefferable [0.01-0.5]
 float THETA = 0.0;      // smaller - more precise, but slower | larger - less precise, but faster | prefferable - [0.3 0.7]

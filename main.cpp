@@ -11,7 +11,6 @@
 
 #include "Octtree.h"
 #include "Renderer.h"
-#include "src/cuda/cuda.cuh"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
@@ -147,7 +146,7 @@ std::vector<Particle> generateParticles(size_t n)
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(-100000.0f, 100000.0f);
+    std::uniform_real_distribution<float> dist(-1000.0f, 1000.0f);
 
     for (size_t i = 0; i < n; i++)
     {
@@ -276,7 +275,7 @@ int main() {
     //     // {800.f, 800.f, 800.f},
     // };
 
-    size_t n = 000;
+    size_t n = 100000;
     std::vector<Particle> particles = generateParticles(n);
 
     auto bounds = findMinMax(particles);
@@ -346,7 +345,7 @@ int main() {
 
         // 7. compute forces
         for (auto &p : particles) {
-            octtree.computeForcesAffectingParticle(0, p, p.ax, p.ay, p.az, particles);
+           // octtree.computeForcesAffectingParticle(0, p, p.ax, p.ay, p.az, particles);
         }
 
         // 6. integrate w/ leapfrog (velocity step 2/2)

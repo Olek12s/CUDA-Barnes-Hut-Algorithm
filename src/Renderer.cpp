@@ -19,6 +19,7 @@ void Renderer::init() {
 
     window = glfwCreateWindow(800, 600, "Barnes-Hut", nullptr, nullptr);    // initialize window object
     glfwMakeContextCurrent(window); // switch context to the window
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);    // mouse ENABLE
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))    // load openGL function pointers
     {
@@ -28,6 +29,8 @@ void Renderer::init() {
     glViewport(0, 0, 800, 600); // set the size of the viewport area (lower-left corner, width, height)
     // glfwSetWindowUserPointer(window, this); // set pointer of specified window
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetWindowUserPointer(window, this);
 
     // VAO  (Vertex Array Object)
     glGenVertexArrays(1, &VAO); // creating 1 buffer and saving its ID to VAO
@@ -72,11 +75,26 @@ void Renderer::framebuffer_size_callback(GLFWwindow* window, int width, int heig
     glViewport(0, 0, width, height);
 }
 
+void Renderer::mouse_callback(GLFWwindow* window, double x, double y)
+{
+    Renderer* renderer = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
+
+    if (!renderer->mouseCaptured) return;
+
+    renderer->camera.mouseInput((float)x, (float)y);
+}
+
 void Renderer::processInput(GLFWwindow* window)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-        isTerminated = true;
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        mouseCaptured = false;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    {
+        mouseCaptured = true;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 }
 
@@ -87,8 +105,8 @@ void Renderer::frameTick() {
         return;
     }
 
-    processInput(window);   // keyboard input
-    update(window);         // process camera
+    processInput(window);           // keyboard input
+    camera.update(window);          // process camera
 
     // ##### rendering calls ##### //
     glClearColor(0,0,0, 1.0f);
@@ -98,6 +116,20 @@ void Renderer::frameTick() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBindVertexArray(VAO);
     shader.use();
+
+
+    glm::mat4 modelMatrix(1.0f);    // identity matrix
+    glm::mat4 viewMatrix = camera.getViewMatrix();
+    glm::mat4 projectionMatrix = camera.getProjectionMatrix(800.0f / 600.0f);
+
+    unsigned int model = glGetUniformLocation(shader.ID, "model");
+    unsigned int view = glGetUniformLocation(shader.ID, "view");
+    unsigned int projection = glGetUniformLocation(shader.ID, "projection");
+
+    // Sending to the shader's uniforms model, view and projection matrices
+    glUniformMatrix4fv(model,1,GL_FALSE, glm::value_ptr(modelMatrix));
+    glUniformMatrix4fv(view,1,GL_FALSE,glm::value_ptr(viewMatrix));
+    glUniformMatrix4fv(projection,1,GL_FALSE,glm::value_ptr(projectionMatrix));
 
     // send to GPU updated particles data
     glBufferSubData(GL_ARRAY_BUFFER,
