@@ -335,6 +335,7 @@ int main() {
         {
             double fps = frameCount * 1000.0 / elapsed;
             std::cout << "FPS: " << fps << '\n';
+            std::cout << "Nodes: " << octtree.nodeCount << "\n";
 
             fpsTimer = now;
             double totalTime = 0.0;

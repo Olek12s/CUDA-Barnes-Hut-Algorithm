@@ -7,6 +7,7 @@ float EPSILON = 0.3f;   // smaller - sharper physics | larger - smoother and mor
 float THETA = 0.5f;      // smaller - more precise, but slower | larger - less precise, but faster | prefferable - [0.3 0.7]
 float G = 6.674e-11;    // real constant is 6.674e-11
 float EPSILON_SQ = EPSILON * EPSILON;
+float THETA_SQ = THETA * THETA;
 
 
 

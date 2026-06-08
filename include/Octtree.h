@@ -29,6 +29,7 @@ class Octtree {
     int rootNode = 0;           // root node has always index 0
 
 public:
+    int nodeCount = 0;
 
     float findRootSize(const std::vector<Particle>& particles);
 

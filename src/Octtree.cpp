@@ -82,10 +82,12 @@ void Octtree::findChildRanges(const std::vector<Particle> &particles, int start,
 
 void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
     nodes.clear();  // clear off nodes vector
+    nodeCount = 0;
     float rootSize = findRootSize(sortedParticles);  // find rootSize
 
     Node root(0, sortedParticles.size(), -1, rootSize, true);
     nodes.push_back(root);
+    nodeCount++;
 
     std::stack<std::pair<int, int>> stack; // first - nodeIndex, second - level // stack of nodes
     stack.push({0, 0});
@@ -133,10 +135,12 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
             if (childStart[i] == -1)
             {
                 nodes.push_back(Node(-1, -1, -1, childSize, true)); // empty leaf
+                nodeCount++;
             }
             else
             {
                 nodes.push_back(Node(childStart[i], childEnd[i], -1, childSize, true));   // leaf with data (no division yet thus firstChild -1)
+                nodeCount++;
             }
             if (childStart[i] != -1) {  // ignore mepty nodes
                // stack.push({node.firstChild + i, level + 1});   // push processed node on stack
@@ -219,7 +223,7 @@ void Octtree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, 
     float dy = node.mcy - particle.y;
     float dz = node.mcz - particle.z;
 
-    float distSq = dx*dx + dy*dy + dz*dz + EPSILON_SQ;
+  //  float distSq = dx*dx + dy*dy + dz*dz + EPSILON_SQ;
 
     // ignore A <-> A and leaf nodes
     if (node.isLeaf && node.end - node.start == 1 && &particles[node.start] == &particle)
@@ -227,17 +231,16 @@ void Octtree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, 
         return;
     }
 
-    float d = sqrt(distSq); // distance between body and node's mass position
-    float invDist = 1.0f / d;
+    float distSq = dx*dx + dy*dy + dz*dz + EPSILON_SQ;
 
-    if (node.isLeaf || (node.size / d) < THETA) {
+    float thetaSq = THETA * THETA;
+    float sizeSq = node.size * node.size;
+
+    if (node.isLeaf || (sizeSq < distSq * thetaSq)) {
+        float invDist = 1.0f / sqrtf(distSq);
         float invDist3 = invDist * invDist * invDist;
         float factor = G * node.mass * invDist3;
 
-        // output vector
-        // ax += dx * factor / particle.mass;
-        // ay += dy * factor / particle.mass;
-        // az += dz * factor / particle.mass;
         ax += dx * factor;
         ay += dy * factor;
         az += dz * factor;
