@@ -20,7 +20,7 @@ struct Node {
     // int firstChild;                     // index of first child of current node. Other children's indices are firstchild + n, where n < 8. -1 if child is absent
     // int numChildren;
 
-    // firstChild takest 28 bits, numChildren takes only 4 bits
+    // firstChild takest 28 bits, numChildren takes only 4 bits...
     int32_t firstChild : 28;
     uint32_t numChildren : 4;
 
