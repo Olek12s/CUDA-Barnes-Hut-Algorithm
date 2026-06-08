@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 add_library(glad STATIC glad.c)
 set_target_properties(glad PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(glad PUBLIC "${CMAKE_SOURCE_DIR}/include")
-
+set(CMAKE_BUILD_TYPE Release)
 
 add_executable(Barnes-Hut-Licencjat
         main.cpp
@@ -24,6 +24,13 @@ add_executable(Barnes-Hut-Licencjat
 
 target_include_directories(Barnes-Hut-Licencjat PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+
+    target_compile_options(Barnes-Hut-Licencjat PRIVATE -O3 -march=native -ffast-math)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+
+    target_compile_options(Barnes-Hut-Licencjat PRIVATE /O2 /arch:AVX2 /fp:fast)
+endif()
 
 target_link_libraries(Barnes-Hut-Licencjat PRIVATE
         glad

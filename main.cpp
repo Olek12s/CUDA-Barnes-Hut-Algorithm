@@ -215,7 +215,7 @@ int main() {
     // Level 21 (last package, node size = 2000 / 2^21 ~ 0.00095):
     //   - Each Morton code package corresponds to a single leaf node
 
-    size_t n = 30'000;
+    size_t n = 60'000;
     std::vector<Particle> particles = generateParticles(n);
 
     auto bounds = findMinMax(particles);
@@ -256,7 +256,7 @@ int main() {
     int frameCount = 0;
 
 
-    float timeStep = 100'000.f;
+    float timeStep = 750'000.f;
     while (!renderer.isTerminated) {
         // 1. render
         auto t0 = std::chrono::high_resolution_clock::now();
@@ -313,7 +313,7 @@ int main() {
         // 9. compute forces
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
-            octtree.computeForcesAffectingParticle(0, p, p.ax, p.ay, p.az, particles);
+            octtree.computeForcesAffectingParticle(0, p, particles);
         }
         timings[9] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 

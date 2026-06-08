@@ -8,7 +8,7 @@
 
 
 struct Node {
-    Node(int start, int end, int firstChild, float size, bool isLeaf) : start(start), end(end), firstChild(firstChild), size(size), isLeaf(isLeaf) {}
+    Node(int start, int end, int firstChild, float size) : start(start), end(end), firstChild(firstChild), size(size) {}
 
     int start, end;         // start and end index of bodies belonging to the node. Start/end refer to ALREADY SORTED particles (by Morton code)
 
@@ -16,12 +16,16 @@ struct Node {
     float mcx, mcy, mcz;   // center of mass position in the node
 
     float size;                         // size of current node (length of the edge)
-    float centerX, centerY, centerZ;    // center of the octant
 
-    int firstChild;                     // index of first child of current node. Other children's indices are firstchild + n, where n < 8. -1 if child is absent
-    bool isLeaf;
+    // int firstChild;                     // index of first child of current node. Other children's indices are firstchild + n, where n < 8. -1 if child is absent
+    // int numChildren;
+
+    // firstChild takest 28 bits, numChildren takes only 4 bits
+    int32_t firstChild : 28;
+    uint32_t numChildren : 4;
 
     bool isEmpty() const;
+    bool isLeaf();
 };
 
 class Octtree {
@@ -57,7 +61,7 @@ public:
     // computes mass dist. among tree nodes in BOTTOM-UP nature. If node leaf - bodies of this node are taking in calculation, else calculate node's children first
     void computeMassDistribution(const std::vector<Particle>& particles);
 
-    void computeForcesAffectingParticle(int nodeIndex, Particle& particle, float& ax, float& ay, float& az, const std::vector<Particle>& particles);
+    void computeForcesAffectingParticle(int nodeIndex, Particle& particle, const std::vector<Particle>& particles);
 
     // void insertBodies();
     // void updateMassDistribution();
