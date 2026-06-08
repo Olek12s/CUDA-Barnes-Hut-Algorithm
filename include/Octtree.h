@@ -30,7 +30,7 @@ class Octtree {
 
 public:
 
-    float findRootSize(const std::vector<Particle> &particles);
+    float findRootSize(const std::vector<Particle>& particles);
 
 
     // For the currently processed node (ONLY ONE NODE) range [start, end)

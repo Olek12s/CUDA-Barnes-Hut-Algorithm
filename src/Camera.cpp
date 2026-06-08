@@ -18,6 +18,7 @@ Camera::Camera() {
     lastX = 400;
     lastY = 300;
     mouseMoved = true;
+    speed = 0.1f;
 }
 
 Camera::Camera(float x, float y, float z) {
@@ -31,7 +32,7 @@ glm::mat4 Camera::getViewMatrix()
 
 glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 {
-    return glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 100000.0f);
+    return glm::perspective(glm::radians(fov), aspectRatio, 0.01f, 10000000.0f);
 }
 
 glm::vec3 Camera::getRightDirection() {
@@ -49,7 +50,6 @@ void Camera::update(GLFWwindow *window) {
 
 void Camera::keyboardInput(GLFWwindow *window) {
     auto pressed = GLFW_PRESS;
-    float speed = 0.1f;
 
     glm::vec3 forward = viewDirection;
     glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0,1,0)));
@@ -72,6 +72,12 @@ void Camera::keyboardInput(GLFWwindow *window) {
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == pressed) {
         position += speed * up;
+    }
+    if (glfwGetKey(window, GLFW_KEY_KP_ADD) == pressed) {
+        speed *= 2;
+    }
+    if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == pressed) {
+        speed /= 2;
     }
 }
 
@@ -99,8 +105,8 @@ void Camera::mouseInput(float x, float y) {
     yaw += xoffset;
 
     // lock the camera's angles (at 90 degrees there's  LookAt camera flip)
-    if (pitch > 89.9f) pitch = 89.9f;
-    if (pitch < -89.9f) pitch = -89.9f;
+    if (pitch > 89.f) pitch = 89.9f;
+    if (pitch < -89.f) pitch = -89.9f;
 
     glm::vec3 dir;
     dir.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

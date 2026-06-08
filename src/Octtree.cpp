@@ -12,7 +12,7 @@ bool Node::isEmpty() const {
 }
 
 
-float Octtree::findRootSize(const std::vector<Particle> &particles) {
+float Octtree::findRootSize(const std::vector<Particle>& particles) {
     std::array<std::pair<float, float>, 3> bounds =
    {{
        {std::numeric_limits<float>::max(),

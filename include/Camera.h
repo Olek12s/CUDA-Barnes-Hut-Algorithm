@@ -29,6 +29,7 @@ private:
     float lastX;
     float lastY;
     bool mouseMoved;
+    float speed;
     float fov;                  // field of view
     glm::vec3 position;         // position of camera in world
     glm::vec3 viewDirection;    // direction of looking, default (1,0,0)

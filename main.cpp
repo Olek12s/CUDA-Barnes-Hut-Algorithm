@@ -150,12 +150,12 @@ std::vector<Particle> generateParticles(size_t n)
 
     for (size_t i = 0; i < n; i++)
     {
-        Particle p{}; // zero-initialization (IMPORTANT)
+        float x = dist(gen);
+        float y = dist(gen);
+        float z = dist(gen);
+        float mass = 100;
 
-        p.x = dist(gen);
-        p.y = dist(gen);
-        p.z = dist(gen);
-        p.mass = 1;
+        Particle p{x, y, z, mass}; // zero-initialization (IMPORTANT)
 
         particles.push_back(p);
     }
@@ -164,7 +164,7 @@ std::vector<Particle> generateParticles(size_t n)
     // particles.push_back(Particle(0.7, 0.7 , 0.5));
     // particles.push_back(Particle(0.2, 0.5 , 0));
     // particles.push_back(Particle(0.1, 0.1 , 0.7));
-    float v = 0.0000486f;
+    float v = 0.00005f;
 
     particles.push_back(Particle( 0.3f,-0.3f,0.5f,1.0f,  v,  v,0.0f));
     particles.push_back(Particle(-0.3f, 0.3f,0.5f,1.0f, -v, -v,0.0f));
@@ -215,67 +215,7 @@ int main() {
     // Level 21 (last package, node size = 2000 / 2^21 ~ 0.00095):
     //   - Each Morton code package corresponds to a single leaf node
 
-    // std::vector<Particle> particles = {
-    //     // bounds
-    //     {-1000, -1000, -1000},
-    //      {-1000, -1000, 1000},
-    //     // {-1000, 1000, -1000},
-    //     // {-1000, 1000, 1000},
-    //     // {1000, -1000, 1000},
-    //     // {1000, -1000, -1000},
-    //     // {1000, 1000, -1000},
-    //     // {1000, 1000, 1000},
-    //
-    //     // 000 octant 0: x ∈ [-1000, 0) y ∈ [-1000, 0) z ∈ [-1000, 0)
-    //     //{-50.f, -760.f, -50.f},
-    //     // {-300.f, -300.f, -300.f},
-    //     // {-550.f, -550.f, -550.f},
-    //     // {-800.f, -800.f, -800.f},
-    //
-    //     // // 001 octant 1: x ∈ [0, 1000] y ∈ [-1000, 0) z ∈ [-1000, 0)
-    //     // {50.f, -50.f, -50.f},
-    //     // {300.f, -300.f, -300.f},
-    //     // {550.f, -550.f, -550.f},
-    //     // {800.f, -800.f, -800.f},
-    //     //
-    //     // // 010 octant 2: x ∈ [-1000, 0) y ∈ [0, 1000] z ∈ [-1000, 0)
-    //     // {-50.f, 50.f, -50.f},
-    //     // {-300.f, 300.f, -300.f},
-    //     // {-550.f, 550.f, -550.f},
-    //     // {-800.f, 800.f, -800.f},
-    //     //
-    //     // // 011 octant 3 x ∈ [0, 1000] y ∈ [0, 1000] z ∈ [-1000, 0)
-    //     // {50.f, 50.f, -50.f},
-    //     // {300.f, 300.f, -300.f},
-    //     // {550.f, 550.f, -550.f},
-    //     // {800.f, 800.f, -800.f},
-    //     //
-    //     // // 100 octant 4 x ∈ [-1000, 0) y ∈ [-1000, 0) z ∈ [0, 1000]
-    //     // {-50.f, -50.f, 50.f},
-    //     // {-300.f, -300.f, 300.f},
-    //     // {-550.f, -550.f, 550.f},
-    //     // {-800.f, -800.f, 800.f},
-    //     //
-    //     // // 101 octant 5 x ∈ [0, 1000] y ∈ [-1000, 0) z ∈ [0, 1000]
-    //     // {50.f, -50.f, 50.f},
-    //     // {300.f, -300.f, 300.f},
-    //     // {550.f, -550.f, 550.f},
-    //     // {800.f, -800.f, 800.f},
-    //     //
-    //     // // 110 octant 6 x ∈ [-1000, 0) y ∈ [0, 1000] z ∈ [0, 1000]
-    //     // {-50.f, 50.f, 50.f},
-    //     // {-300.f, 300.f, 300.f},
-    //     // {-550.f, 550.f, 550.f},
-    //     // {-800.f, 800.f, 800.f},
-    //     //
-    //     // // 111 octant 7 x ∈ [0, 1000] y ∈ [0, 1000] z ∈ [0, 1000]
-    //     // {50.f, 50.f, 50.f},
-    //     // {300.f, 300.f, 300.f},
-    //     // {550.f, 550.f, 550.f},
-    //     // {800.f, 800.f, 800.f},
-    // };
-
-    size_t n = 100000;
+    size_t n = 30'000;
     std::vector<Particle> particles = generateParticles(n);
 
     auto bounds = findMinMax(particles);
@@ -310,62 +250,130 @@ int main() {
     renderer.init();
     Octtree octtree;
 
-    float timeStep = 100.f;
-    while (!renderer.isTerminated) {
-        renderer.frameTick();
+    std::array<double, 11> timings = {0.0};
 
-        // 1. integrate w/ leapfrog (velocity step 1/2)
+    auto fpsTimer = std::chrono::steady_clock::now();
+    int frameCount = 0;
+
+
+    float timeStep = 100'000.f;
+    while (!renderer.isTerminated) {
+        // 1. render
+        auto t0 = std::chrono::high_resolution_clock::now();
+        renderer.frameTick();
+        timings[0] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+
+        // 2. integrate w/ leapfrog (velocity step 1/2)
+        t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             //std::cout << "mass=" << p.mass << " ax=" << p.ax << "\n";
             p.leapFrogVelStep(timeStep * 0.5f);
         }
-        // 1.5 integrate w/ leapfrog (position step)
+        timings[1] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+
+        // 2.5 integrate w/ leapfrog (position step)
+        t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogPosStep(timeStep);
         }
+        timings[2] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // 2. bounds
+        // 3. bounds
+        t0 = std::chrono::high_resolution_clock::now();
         auto bounds = findMinMax(particles);
+        timings[3] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // 3. recompute morton codes
+        // 4. recompute morton codes
+        t0 = std::chrono::high_resolution_clock::now();
         computeMortonCodes(particles, bounds);
+        timings[4] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // 4. sort by morton
+        // 5. sort by morton
+        t0 = std::chrono::high_resolution_clock::now();
         std::sort(particles.begin(), particles.end(), comp);
+        timings[5] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // 5. rebuild tree
+        // 6. rebuild tree
+        t0 = std::chrono::high_resolution_clock::now();
         octtree.buildTree(particles);
+        timings[6] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        //
+        // 7. mass distribution
+        t0 = std::chrono::high_resolution_clock::now();
         octtree.computeMassDistribution(particles);
-        // 6. reset accelerations
+        timings[7] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+
+        // 8. reset accelerations
+        t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.ax = p.ay = p.az = 0;
         }
+        timings[8] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // 7. compute forces
+        // 9. compute forces
+        t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
-           // octtree.computeForcesAffectingParticle(0, p, p.ax, p.ay, p.az, particles);
+            octtree.computeForcesAffectingParticle(0, p, p.ax, p.ay, p.az, particles);
         }
+        timings[9] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // 6. integrate w/ leapfrog (velocity step 2/2)
+        // 10. integrate w/ leapfrog (velocity step 2/2)
+        t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogVelStep(timeStep * 0.5f);
             //p.leapFrogPosStep(timeStep);  posstep should appear twice
         }
+        timings[10] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        Particle p = particles[0];
-        //std::cout << p.x << "\n";
-        //std::cout << p.toString() << "\n";
-        //printf("posX: %.9f\n", p.x);
+        //std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        frameCount++;
+        auto now = std::chrono::steady_clock::now();
 
-        // std::this_thread::sleep_for(
-        //       std::chrono::milliseconds(16)
-        //   );
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - fpsTimer).count();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
-        std::cout << "." << std::flush;
+        if (elapsed >= 1000)
+        {
+            double fps = frameCount * 1000.0 / elapsed;
+            std::cout << "FPS: " << fps << '\n';
 
+            fpsTimer = now;
+            double totalTime = 0.0;
+            for (double t : timings) {
+                totalTime += t;
+            }
+
+            const char* names[11] =
+            {
+                "1. render",
+                "2. leapfrog vel step 1/2",
+                "3. leapfrog pos step",
+                "4. bounds",
+                "5. morton codes",
+                "6. sort morton",
+                "7. build tree",
+                "8. mass distribution",
+                "9. reset accelerations",
+                "10. compute forces",
+                "11. leapfrog vel step 2/2"
+            };
+
+            std::cout << "\n===== PROFILING FOR " << particles.size() << " BODIES (LAST FRAME) =====\n";
+
+            for (int i = 0; i < 11; ++i)
+            {
+                double percent = (timings[i] / totalTime) * 100.0;
+
+                std::cout
+                    << names[i]
+                    << ": "
+                    << timings[i]
+                    << " ms ("
+                    << percent
+                    << "%)\n";
+            }
+            std::cout << "TOTAL frame: " << totalTime << " ms\n";
+            frameCount = 0;
+        }
     }
 
     //cudaApiTest();

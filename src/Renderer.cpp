@@ -137,7 +137,7 @@ void Renderer::frameTick() {
                      particles.size() * sizeof(Particle),
                      particles.data());
 
-    glPointSize(4.0f);
+    glPointSize(2.0f);
     glDrawArrays(GL_POINTS, 0, particles.size());
 
 
