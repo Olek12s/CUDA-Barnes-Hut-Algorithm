@@ -30,6 +30,7 @@ public:
     Renderer(std::vector<Particle> &particles): particles(particles) {}
     void init();
     void frameTick();
+    glm::vec3 getCameraXYZ();
 
     bool isTerminated = false;
 };

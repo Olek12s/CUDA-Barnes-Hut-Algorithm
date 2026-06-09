@@ -33,9 +33,16 @@ struct Particle {
     }
 
     void leapFrogVelStep(float halfTimeStep) {
+        // float max = 1000000;
+
         vx += ax * halfTimeStep;
         vy += ay * halfTimeStep;
         vz += az * halfTimeStep;
+
+        // if (vx > max) vx = max;
+        // if (vy > max) vy = max;
+        // if (vz > max) vz = max;
+
         //printf("%.15f\n", az);
         //std::cout << "Acc: " << ax << "\n";
     }

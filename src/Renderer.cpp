@@ -67,6 +67,13 @@ void Renderer::init() {
 
     shader = Shader("Particle.vex", "Particle.frag");  // loading shader's files and compiling both vex and frag shaders
     shader.use();
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glDepthMask(GL_FALSE);
+
+    glPointSize(4.0f);
+    glDrawArrays(GL_POINTS, 0, particles.size());
 }
 
 void Renderer::framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -137,16 +144,16 @@ void Renderer::frameTick() {
                      particles.size() * sizeof(Particle),
                      particles.data());
 
-    glPointSize(2.0f);
     glDrawArrays(GL_POINTS, 0, particles.size());
 
 
     glfwSwapBuffers(window);
     glfwPollEvents();
-
-    std::cout << "#";
 }
 
+glm::vec3 Renderer::getCameraXYZ() {
+    return camera.position;
+}
 
 
 

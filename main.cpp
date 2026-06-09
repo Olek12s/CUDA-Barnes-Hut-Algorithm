@@ -146,7 +146,7 @@ std::vector<Particle> generateParticles(size_t n)
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(-1000.0f, 1000.0f);
+    std::uniform_real_distribution<float> dist(-1000.0f, 1.0f);
 
     for (size_t i = 0; i < n; i++)
     {
@@ -166,11 +166,12 @@ std::vector<Particle> generateParticles(size_t n)
     // particles.push_back(Particle(0.1, 0.1 , 0.7));
     float v = 0.00005f;
 
-    particles.push_back(Particle( 0.3f,-0.3f,0.5f,1.0f,  v,  v,0.0f));
-    particles.push_back(Particle(-0.3f, 0.3f,0.5f,1.0f, -v, -v,0.0f));
-    particles.push_back(Particle(-0.3f,-0.3f,0.5f,1.0f,  v, -v,0.0f));
-    particles.push_back(Particle( 0.3f, 0.3f,0.5f,1.0f, -v,  v,0.0f));
-    particles.push_back(Particle(0.0, 0.0 , 0.5, 150.f));
+    particles.push_back(Particle(100000.0, 0.0 , -33330.5, 150000.f));
+    particles.push_back(Particle(1000.0, 1000000.0 , 0.5, 1500000.f));
+    particles.push_back(Particle(10000000.0, 0.0 , 0.5, 150000.f));
+    particles.push_back(Particle(-1000.0, 0.0 , -440000.5, 1500000.f));
+    particles.push_back(Particle(100000.0, 0.0 , 0.5, 1500000.f));
+    particles.push_back(Particle(10000000.0, 0.0 , 0.5, 150000.f));
     return particles;
 }
 
@@ -215,7 +216,7 @@ int main() {
     // Level 21 (last package, node size = 2000 / 2^21 ~ 0.00095):
     //   - Each Morton code package corresponds to a single leaf node
 
-    size_t n = 60'000;
+    size_t n = 200'000;
     std::vector<Particle> particles = generateParticles(n);
 
     auto bounds = findMinMax(particles);
@@ -256,7 +257,7 @@ int main() {
     int frameCount = 0;
 
 
-    float timeStep = 750'000.f;
+    float timeStep = 10000.f;
     while (!renderer.isTerminated) {
         // 1. render
         auto t0 = std::chrono::high_resolution_clock::now();
@@ -310,12 +311,44 @@ int main() {
         }
         timings[8] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // 9. compute forces
+        // 9. compute forces (multithread)
         t0 = std::chrono::high_resolution_clock::now();
-        for (auto &p : particles) {
-            octtree.computeForcesAffectingParticle(0, p, particles);
+
+        unsigned int numThreads = std::thread::hardware_concurrency();
+
+        if (numThreads == 0) numThreads = 12;
+        numThreads = 12;
+
+        std::vector<std::thread> threads;
+        threads.reserve(numThreads);
+
+        auto worker = [&](size_t start, size_t end)
+        {
+            for (size_t i = start; i < end; i++)
+            {
+                octtree.computeForcesAffectingParticle(0, particles[i], particles);
+            }
+        };
+
+        size_t n = particles.size();
+        size_t chunk = (n + numThreads - 1) / numThreads;
+
+        for (unsigned int t = 0; t < numThreads; t++)
+        {
+            size_t start = t * chunk;
+            size_t end = std::min(start + chunk, n);
+
+            threads.emplace_back(worker, start, end);
         }
-        timings[9] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+
+        for (auto &th : threads)
+        {
+            th.join();
+        }
+
+        timings[9] = std::chrono::duration<double, std::milli>(
+            std::chrono::high_resolution_clock::now() - t0
+        ).count();
 
         // 10. integrate w/ leapfrog (velocity step 2/2)
         t0 = std::chrono::high_resolution_clock::now();
@@ -334,6 +367,7 @@ int main() {
         if (elapsed >= 1000)
         {
             double fps = frameCount * 1000.0 / elapsed;
+            std::cout << "\nCAM pos: [" << renderer.getCameraXYZ().x << ", " << renderer.getCameraXYZ().y << ", " << renderer.getCameraXYZ().z << "]\n";
             std::cout << "FPS: " << fps << '\n';
             std::cout << "Nodes: " << octtree.nodeCount << "\n";
 

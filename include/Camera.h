@@ -22,7 +22,7 @@ public:
     glm::vec3 getRightDirection();
     glm::mat4 getViewMatrix();
     glm::mat4 getProjectionMatrix(float aspectRatio) const;
-private:
+
     float pitch;
     float yaw;
 
