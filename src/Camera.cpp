@@ -32,7 +32,8 @@ glm::mat4 Camera::getViewMatrix()
 
 glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 {
-    return glm::perspective(glm::radians(fov), aspectRatio, 0.01f, 10000000.0f);
+    //return glm::perspective(glm::radians(fov), aspectRatio, 0.01f, 10000000.0f);
+    return glm::infinitePerspective(glm::radians(fov), aspectRatio, 0.01f); // infinity reach
 }
 
 glm::vec3 Camera::getRightDirection() {
@@ -42,6 +43,11 @@ glm::vec3 Camera::getRightDirection() {
 glm::vec3 Camera::getUpDirection() {
     return glm::vec3(glm::cross(viewDirection, getRightDirection()));
 }
+
+glm::vec3 Camera::getVelocityVector() {
+    return currentVelocity;
+}
+
 
 void Camera::update(GLFWwindow *window, float deltaTime) {
     // ##### Handle inputs #####
@@ -56,31 +62,46 @@ void Camera::keyboardInput(GLFWwindow *window, float deltaTime) {
     glm::vec3 up = glm::vec3(0,1,0);
 
     float vel = speed * deltaTime;
+    glm::vec3 moveDirection(0.0f);
 
     if (glfwGetKey(window, GLFW_KEY_W) == pressed || glfwGetKey(window, GLFW_KEY_UP) == pressed) {
-        position += vel * forward;
+        moveDirection += forward;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == pressed || glfwGetKey(window, GLFW_KEY_LEFT) == pressed) {
-        position += vel * -right;
+        moveDirection += -right;
     }
     if (glfwGetKey(window, GLFW_KEY_S) == pressed || glfwGetKey(window, GLFW_KEY_DOWN) == pressed) {
-        position += vel * -forward;
+        moveDirection += -forward;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == pressed || glfwGetKey(window, GLFW_KEY_RIGHT) == pressed) {
-        position += vel * right;
+        moveDirection += right;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == pressed) {
-        position += vel * -up;
+        moveDirection += -up;
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == pressed) {
-        position += vel * up;
+        moveDirection += up;
     }
-    if (glfwGetKey(window, GLFW_KEY_KP_ADD) == pressed) {
-        speed *= 2;
+
+    // normalize direction vec, multiply by speed and deltaTime
+    if (glm::length(moveDirection) > 0.0f) {
+        currentVelocity = glm::normalize(moveDirection) * speed;
+        position += currentVelocity * deltaTime;    // update position
+    } else {
+        currentVelocity = glm::vec3(0.0f);
     }
-    if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == pressed) {
-        speed /= 2;
+
+    bool currentAddPressed = (glfwGetKey(window, GLFW_KEY_KP_ADD) == pressed || glfwGetKey(window, GLFW_KEY_EQUAL) == pressed);
+    if (currentAddPressed && !lastAddPressed) {
+        speed *= 2.0f;
     }
+    lastAddPressed = currentAddPressed;
+
+    bool currentSubPressed = (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == pressed || glfwGetKey(window, GLFW_KEY_MINUS) == pressed);
+    if (currentSubPressed && !lastSubPressed) {
+        speed /= 2.0f;
+    }
+    lastSubPressed = currentSubPressed;
 }
 
 void Camera::mouseInput(float x, float y) {
@@ -98,9 +119,9 @@ void Camera::mouseInput(float x, float y) {
     lastX = x;
     lastY = y;
 
-    float sensitivity = 0.1f;   //TODO:
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
+    // sensitivity
+    xoffset *= 0.1f;
+    yoffset *= 0.1f;
 
     // update camera's pitch & yaw variables after mouse movement
     pitch += yoffset;
@@ -111,8 +132,6 @@ void Camera::mouseInput(float x, float y) {
     if (yaw < -360.0f) yaw += 360.0f;
     if (pitch > 89.f) pitch = 89.f;
     if (pitch < -89.f) pitch = -89.f;
-
-    std::cout << "Pitch: " << pitch << " Yaw: " << yaw << " \n";
 
     glm::vec3 dir;
     dir.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

@@ -16,6 +16,6 @@ inline float G_MULTIPLIER = 1.0f;
 inline float TIME_STEP = 1000.0f;
 
 inline const int MAX_HARDWARE_THREADS = std::thread::hardware_concurrency();
-inline int NUM_THREADS = MAX_HARDWARE_THREADS / 2;
+inline int NUM_THREADS = MAX_HARDWARE_THREADS;
 
 #endif //CONFIG_H

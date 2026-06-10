@@ -15,7 +15,7 @@
 
 class Renderer {
 private:
-    std::vector<Particle>& particles;
+    std::vector<Particle>* particles;
     GLFWwindow* window;
     Shader shader;
     unsigned int VBO;   // Vertex Buffer Object
@@ -25,12 +25,13 @@ private:
     bool mouseCaptured = true;
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
+    int lastParticleCount = 0;
 
     static void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // callback each time a window is resized
     static void mouse_callback(GLFWwindow* window, double x, double y);
     void processInput(GLFWwindow* window);
 public:
-    Renderer(std::vector<Particle> &particles): particles(particles) {}
+    Renderer(std::vector<Particle> &particles): particles(&particles) {}
     void init();
     void initFrame();
     void prepareImGuiFrame();
@@ -38,6 +39,7 @@ public:
     glm::vec3 getCameraXYZ();
 
     bool isTerminated = false;
+    float currentTPS = 0.0f;
 };
 
 

@@ -14,6 +14,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "Particle.h"
+#include "ParticleGenerator.h"
 
 
 void Renderer::init() {
@@ -32,12 +33,12 @@ void Renderer::init() {
         return;
     }
 
-    glfwSwapInterval(0);    // 0 = VSync Off
+    //glfwSwapInterval(0);    // 0 = VSync Off
     glViewport(0, 0, 800, 600); // set the size of the viewport area (lower-left corner, width, height)
     // glfwSetWindowUserPointer(window, this); // set pointer of specified window
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);  // window resize callback
+    glfwSetCursorPosCallback(window, mouse_callback);                   // mouse coursor callback
+    glfwSetWindowUserPointer(window, this);                       // set pointer to the current window
 
     // VAO  (Vertex Array Object)
     glGenVertexArrays(1, &VAO); // creating 1 buffer and saving its ID to VAO
@@ -46,8 +47,8 @@ void Renderer::init() {
     glGenBuffers(1, &VBO);  // generate 1 Vertex Buffer Object
     glBindBuffer(GL_ARRAY_BUFFER, VBO); // set VBO as an active buffer for further operations / function calls
     glBufferData(GL_ARRAY_BUFFER,
-        particles.size() * sizeof(Particle),
-        particles.data(),
+        particles->size() * sizeof(Particle),
+        particles->data(),
         GL_DYNAMIC_DRAW);  // allocating memory on GPU for Particle's vertices
 
     // telling openGL how to read data from VBO (position)
@@ -150,6 +151,14 @@ void Renderer::renderFrame() {
     glBindVertexArray(VAO);
     shader.use();
 
+    // if size of particles changed - reallocate buffer
+    if (particles->size() != lastParticleCount) {
+        glBufferData(GL_ARRAY_BUFFER, particles->size() * sizeof(Particle), particles->data(), GL_DYNAMIC_DRAW);
+        lastParticleCount = particles->size();
+    } else {    // if size is same
+        glBufferSubData(GL_ARRAY_BUFFER, 0, particles->size() * sizeof(Particle), particles->data());
+    }
+
     glm::mat4 modelMatrix(1.0f);    // identity matrix
     glm::mat4 viewMatrix = camera.getViewMatrix();
     glm::mat4 projectionMatrix = camera.getProjectionMatrix(800.0f / 600.0f);
@@ -166,11 +175,11 @@ void Renderer::renderFrame() {
     // send to GPU updated particles data
     glBufferSubData(GL_ARRAY_BUFFER,
                      0,
-                     particles.size() * sizeof(Particle),
-                     particles.data());
+                     particles->size() * sizeof(Particle),
+                     particles->data());
 
     // render sent particles
-    glDrawArrays(GL_POINTS, 0, particles.size());
+    glDrawArrays(GL_POINTS, 0, particles->size());
 
     // render IMGUI window
     ImGui::Render();
@@ -184,29 +193,81 @@ void Renderer::prepareImGuiFrame() {
     ImGuiIO& io = ImGui::GetIO();
 
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 10.0f, 10.0f), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
-    ImGui::Begin("Configuration", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
+    ImGui::Begin("Config", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
 
-    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Simulation Parameters");
-    ImGui::SliderFloat("G Multiplier", &G_MULTIPLIER, 0.0f, 300.0f);
+    // ##### CONFIG #####
+
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Config variables:");
+    //ImGui::SliderFloat("G Multiplier", &G_MULTIPLIER, 0.0f, 300.0f);
+    ImGui::InputFloat("G Multiplier", &G_MULTIPLIER, 1.0f, 10.0f, "%.1f");
 
     if (ImGui::SliderFloat("Theta", &THETA, 0.0f, 5.0f)) THETA_SQ = THETA * THETA;
     if (ImGui::SliderFloat("Epsilon", &EPSILON, 0.01f, 1.0f)) EPSILON_SQ = EPSILON * EPSILON;
 
-    ImGui::SliderFloat("Timestamp (dt)", &TIME_STEP, 0.0f, 50000.0f);
+
+    //ImGui::SliderFloat("Timestep", &TIME_STEP, 0.0f, 50000.0f);
+    ImGui::InputFloat("Timestep", &TIME_STEP, 1.0f, 100.0f, "%.1f");
     ImGui::SliderInt("Threads", &NUM_THREADS, 1, MAX_HARDWARE_THREADS);
 
+    // ##### CONFIG #####
+
     ImGui::Separator();
-    ImGui::Text("TPS: %.1f", 2.f);
-    ImGui::Text("Current Bodies: ", particles.size());
+    ImGui::Text("TPS: %.1f", ImGui::GetIO().Framerate);
+    ImGui::Text("Current Bodies: %zu", particles->size());
 
     if (ImGui::Button("Remove Bodies", ImVec2(-1, 0))) {
-        particles.clear();
+        particles->clear();
+    }
+    ImGui::Separator();
+
+    // ##### PARTICLE GENERATOR #####
+
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Particle Generator:");
+
+    static float genParticleMass = 1.0f;
+    static float genCenterMass = 150000.0f;
+    static int genCount = 10000;
+
+    ImGui::InputFloat("Particle Mass", &genParticleMass, 10.0f, 100.0f, "%.1f");
+    ImGui::InputFloat("Center Mass", &genCenterMass, 1000.0f, 10000.0f, "%.1f");
+    ImGui::InputInt("Count", &genCount, 100, 1000);
+
+    glm::vec3 FOC = camera.position + camera.viewDirection * 150.0f;      // front of camera
+    glm::vec3 CVV = camera.getVelocityVector() * (deltaTime / TIME_STEP); // camera velocity vector
+
+    if (ImGui::Button("Create Particle", ImVec2(-1, 0))) {
+        ParticleGenerator::addParticle(*particles, FOC.x, FOC.y, FOC.z, genParticleMass, CVV.x, CVV.y, CVV.z);
+    }
+    if (ImGui::Button("Create Rectangle", ImVec2(-1, 0))) {
+        ParticleGenerator::createFlatRectangle(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, CVV.x, CVV.y, CVV.z);
+    }
+    if (ImGui::Button("Create Cube", ImVec2(-1, 0))) {
+        ParticleGenerator::createCube(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, CVV.x, CVV.y, CVV.z);
+    }
+    if (ImGui::Button("Create Disc", ImVec2(-1, 0))) {
+        ParticleGenerator::createDisc(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, CVV.x, CVV.y, CVV.z);
+    }
+    if (ImGui::Button("Create Sphere", ImVec2(-1, 0))) {
+        ParticleGenerator::createSphere(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, CVV.x, CVV.y, CVV.z);
     }
 
+    // ##### PARTICLE GENERATOR #####
+
+
+    // ##### CAMERA #####
+
     ImGui::Separator();
-    ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Camera Stats");
+
+    if (ImGui::Button("Reset position", ImVec2(-1, 0))) {
+        camera.position = glm::vec3(0,0,0);
+    }
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Camera:");
+    ImGui::Text("Speed: %.1f", camera.speed);
     ImGui::Text("Pitch: %.1f", camera.pitch);
     ImGui::Text("Yaw: %.1f", camera.yaw);
+    ImGui::Text("Cam Pos: %.2f, %.2f, %.2f", camera.position.x, camera.position.y, camera.position.z);
+
+    // ##### CAMERA #####
 
     ImGui::End();
 }
