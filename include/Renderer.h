@@ -32,7 +32,9 @@ private:
 public:
     Renderer(std::vector<Particle> &particles): particles(particles) {}
     void init();
-    void frameTick();
+    void initFrame();
+    void prepareImGuiFrame();
+    void renderFrame();
     glm::vec3 getCameraXYZ();
 
     bool isTerminated = false;

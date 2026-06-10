@@ -232,7 +232,7 @@ void Octtree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, 
     if (node.isLeaf() || (sizeSq < distSq * thetaSq)) {
         float invDist = 1.0f / sqrtf(distSq);
         float invDist3 = invDist * invDist * invDist;
-        float factor = G * node.mass * invDist3;
+        float factor = G * G_MULTIPLIER * node.mass * invDist3;
 
         particle.ax += dx * factor;
         particle.ay += dy * factor;

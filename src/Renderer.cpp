@@ -7,7 +7,12 @@
 
 #include "../include/Renderer.h"
 #include <iostream>
+#include <thread>
 
+#include "Config.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "Particle.h"
 
 
@@ -26,6 +31,8 @@ void Renderer::init() {
         std::cout << "Failed to initialize GL Loader-Generator (GLAD)" << std::endl;
         return;
     }
+
+    glfwSwapInterval(0);    // 0 = VSync Off
     glViewport(0, 0, 800, 600); // set the size of the viewport area (lower-left corner, width, height)
     // glfwSetWindowUserPointer(window, this); // set pointer of specified window
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -73,7 +80,13 @@ void Renderer::init() {
     glDepthMask(GL_FALSE);
 
     glPointSize(4.0f);
-    glDrawArrays(GL_POINTS, 0, particles.size());
+
+    // IMGUI INIT
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330 core");
 }
 
 void Renderer::framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -100,6 +113,7 @@ void Renderer::processInput(GLFWwindow* window)
     }
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
+        if (ImGui::GetIO().WantCaptureMouse) return;
         if (!mouseCaptured) {
             camera.mouseMoved = true;
         }
@@ -108,8 +122,7 @@ void Renderer::processInput(GLFWwindow* window)
     }
 }
 
-
-void Renderer::frameTick() {
+void Renderer::initFrame() {
     if (glfwWindowShouldClose(window)) {
         isTerminated = true;
         return;
@@ -119,18 +132,23 @@ void Renderer::frameTick() {
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
-    processInput(window);                      // keyboard input
-    camera.update(window, deltaTime);          // process camera
+    processInput(window);               // keyboard input
+    camera.update(window, deltaTime);   // process camera
 
-    // ##### rendering calls ##### //
+    // Clear off window's context
     glClearColor(0,0,0, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    // new frame form IMGUI
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+}
 
+void Renderer::renderFrame() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBindVertexArray(VAO);
     shader.use();
-
 
     glm::mat4 modelMatrix(1.0f);    // identity matrix
     glm::mat4 viewMatrix = camera.getViewMatrix();
@@ -151,12 +169,48 @@ void Renderer::frameTick() {
                      particles.size() * sizeof(Particle),
                      particles.data());
 
+    // render sent particles
     glDrawArrays(GL_POINTS, 0, particles.size());
 
+    // render IMGUI window
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glfwSwapBuffers(window);
     glfwPollEvents();
 }
+
+void Renderer::prepareImGuiFrame() {
+    ImGuiIO& io = ImGui::GetIO();
+
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 10.0f, 10.0f), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+    ImGui::Begin("Configuration", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
+
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Simulation Parameters");
+    ImGui::SliderFloat("G Multiplier", &G_MULTIPLIER, 0.0f, 300.0f);
+
+    if (ImGui::SliderFloat("Theta", &THETA, 0.0f, 5.0f)) THETA_SQ = THETA * THETA;
+    if (ImGui::SliderFloat("Epsilon", &EPSILON, 0.01f, 1.0f)) EPSILON_SQ = EPSILON * EPSILON;
+
+    ImGui::SliderFloat("Timestamp (dt)", &TIME_STEP, 0.0f, 50000.0f);
+    ImGui::SliderInt("Threads", &NUM_THREADS, 1, MAX_HARDWARE_THREADS);
+
+    ImGui::Separator();
+    ImGui::Text("TPS: %.1f", 2.f);
+    ImGui::Text("Current Bodies: ", particles.size());
+
+    if (ImGui::Button("Remove Bodies", ImVec2(-1, 0))) {
+        particles.clear();
+    }
+
+    ImGui::Separator();
+    ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Camera Stats");
+    ImGui::Text("Pitch: %.1f", camera.pitch);
+    ImGui::Text("Yaw: %.1f", camera.yaw);
+
+    ImGui::End();
+}
+
 
 glm::vec3 Renderer::getCameraXYZ() {
     return camera.position;

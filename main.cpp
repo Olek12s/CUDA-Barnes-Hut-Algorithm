@@ -9,6 +9,7 @@
 #include <thread>
 #include <chrono>
 
+#include "Config.h"
 #include "Octtree.h"
 #include "Renderer.h"
 #include "glad/glad.h"
@@ -16,10 +17,6 @@
 
 int glTest();
 void cudaApiTest();
-
-constexpr int MAX_MORTON_BITS = 21; // Z_CODE has 64 unsigned bit type - code is defined by 3 values, thus maximum morton bits is 64/3 = 21
-constexpr unsigned int MORTON_SCALE = (1u << MAX_MORTON_BITS) - 1u; // 2097151, or std::pow(2, 21
-                                                                    //Morton_SCALE is in other words the biggest digit possible toencode on 21 btis
 
 // scale float value to new value between [0, 21bits]
 unsigned int scale(float f, float fmin, float fmax) {
@@ -255,27 +252,27 @@ int main() {
 
     auto fpsTimer = std::chrono::steady_clock::now();
     int frameCount = 0;
+    double displayTPS = 0.0;
 
-
-    float timeStep = 1000.f;
     while (!renderer.isTerminated) {
         // 1. render
         auto t0 = std::chrono::high_resolution_clock::now();
-        renderer.frameTick();
+        //renderer.frameTick();
+        renderer.initFrame();
         timings[0] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2. integrate w/ leapfrog (velocity step 1/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             //std::cout << "mass=" << p.mass << " ax=" << p.ax << "\n";
-            p.leapFrogVelStep(timeStep * 0.5f);
+            p.leapFrogVelStep(TIME_STEP * 0.5f);
         }
         timings[1] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2.5 integrate w/ leapfrog (position step)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
-            p.leapFrogPosStep(timeStep);
+            p.leapFrogPosStep(TIME_STEP);
         }
         timings[2] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
@@ -353,10 +350,13 @@ int main() {
         // 10. integrate w/ leapfrog (velocity step 2/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
-            p.leapFrogVelStep(timeStep * 0.5f);
-            //p.leapFrogPosStep(timeStep);  posstep should appear twice
+            p.leapFrogVelStep(TIME_STEP * 0.5f);
+            //p.leapFrogPosStep(TIME_STEP);  posstep should appear twice
         }
         timings[10] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+
+        renderer.prepareImGuiFrame();   // prepare imgui window
+        renderer.renderFrame();         // render particles
 
         //std::this_thread::sleep_for(std::chrono::milliseconds(16));
         frameCount++;
