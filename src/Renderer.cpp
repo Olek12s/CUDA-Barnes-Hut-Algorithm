@@ -202,7 +202,7 @@ void Renderer::prepareImGuiFrame() {
     ImGui::InputFloat("G Multiplier", &G_MULTIPLIER, 1.0f, 10.0f, "%.1f");
 
     if (ImGui::SliderFloat("Theta", &THETA, 0.0f, 5.0f)) THETA_SQ = THETA * THETA;
-    if (ImGui::SliderFloat("Epsilon", &EPSILON, 0.01f, 1.0f)) EPSILON_SQ = EPSILON * EPSILON;
+    if (ImGui::SliderFloat("Epsilon", &EPSILON, 0.01f, 5.0f)) EPSILON_SQ = EPSILON * EPSILON;
 
 
     //ImGui::SliderFloat("Timestep", &TIME_STEP, 0.0f, 50000.0f);
@@ -227,10 +227,15 @@ void Renderer::prepareImGuiFrame() {
     static float genParticleMass = 1.0f;
     static float genCenterMass = 150000.0f;
     static int genCount = 10000;
+    static float minRadius = 1000.0f;
+    static float maxRadius = 10000.0f;
 
-    ImGui::InputFloat("Particle Mass", &genParticleMass, 10.0f, 100.0f, "%.1f");
+    ImGui::InputFloat("Min Radius", &minRadius, 100.0f, 1000.0f, "%.1f");
+    ImGui::InputFloat("Max Radius", &maxRadius, 100.0f, 1000.0f, "%.1f");
+    ImGui::InputFloat("Particle Mass", &genParticleMass, 100.0f, 1000.0f, "%.1f");
     ImGui::InputFloat("Center Mass", &genCenterMass, 1000.0f, 10000.0f, "%.1f");
-    ImGui::InputInt("Count", &genCount, 100, 1000);
+    ImGui::InputInt("Count", &genCount, 1000, 10000);
+    ImGui::Checkbox("Anchor:", &ANCHOR);
 
     glm::vec3 FOC = camera.position + camera.viewDirection * 150.0f;      // front of camera
     glm::vec3 CVV = camera.getVelocityVector() * (deltaTime / TIME_STEP); // camera velocity vector
@@ -245,10 +250,10 @@ void Renderer::prepareImGuiFrame() {
         ParticleGenerator::createCube(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, CVV.x, CVV.y, CVV.z);
     }
     if (ImGui::Button("Create Disc", ImVec2(-1, 0))) {
-        ParticleGenerator::createDisc(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, CVV.x, CVV.y, CVV.z);
+        ParticleGenerator::createDisc(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, minRadius, maxRadius, CVV.x, CVV.y, CVV.z);
     }
     if (ImGui::Button("Create Sphere", ImVec2(-1, 0))) {
-        ParticleGenerator::createSphere(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, CVV.x, CVV.y, CVV.z);
+        ParticleGenerator::createSphere(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, minRadius, maxRadius, CVV.x, CVV.y, CVV.z);
     }
 
     // ##### PARTICLE GENERATOR #####

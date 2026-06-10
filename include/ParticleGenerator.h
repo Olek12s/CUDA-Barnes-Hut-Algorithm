@@ -14,8 +14,8 @@ public:
     static void createFlatRectangle(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float vx = 0.0f, float vy = 0.0f, float vz = 0.0f);
     static void createCube(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float vx = 0.0f, float vy = 0.0f, float vz = 0.0f);
 
-    static void createDisc(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float centerMass, float vx = 0.0f, float vy = 0.0f, float vz = 0.0f);
-    static void createSphere(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float centerMass, float vx = 0.0f, float vy = 0.0f, float vz = 0.0f);
+    static void createDisc(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float centerMass, float minR, float maxR, float vx, float vy, float vz);
+    static void createSphere(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float centerMass, float minR, float maxR, float vx, float vy, float vz);
 
 };
 

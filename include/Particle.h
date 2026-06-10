@@ -8,11 +8,20 @@
 #include <format>
 
 struct Particle {
-    float x, y, z;      // position
-    float vx, vy, vz;   // velocity
-    float ax, ay, az;   // acceleration
-    float mass;         // mass
-    uint64_t Z_CODE;    // morton code
+    float x, y, z;              // position
+    float vx, vy, vz;           // velocity
+    float ax, ay, az;           // acceleration
+    float mass;                 // mass
+    uint64_t Z_CODE : 63;       // morton code
+    uint64_t anchored : 1;      // anchor - takes Most Significant Bit
+
+    void setAnchored(bool anchor) {
+        anchored = anchor;
+    }
+
+    bool isAnchored() const {
+        return anchored;
+    }
 
     // Particle() {};
     // Particle(float x, float y, float z): x(x),y(y),z(z) {}
@@ -23,6 +32,8 @@ struct Particle {
     Particle(float x, float y, float z, float m, float vx, float vy, float vz): x(x),y(y),z(z),  vx(vx), vy(vy), vz(vz),ax(0), ay(0), az(0),mass(m), Z_CODE(0) {}
 
     void euler(float timeStep) {
+        if (isAnchored()) return;
+
         vx += ax * timeStep;
         vy += ay * timeStep;
         vz += az * timeStep;
@@ -33,7 +44,7 @@ struct Particle {
     }
 
     void leapFrogVelStep(float halfTimeStep) {
-        // float max = 1000000;
+        if (isAnchored()) return;
 
         vx += ax * halfTimeStep;
         vy += ay * halfTimeStep;
@@ -48,11 +59,11 @@ struct Particle {
     }
 
     void leapFrogPosStep(float timeStep) {
-        //printf("before: %.15f\n", vx);
+        if (isAnchored()) return;
+
         x += vx * timeStep;
         y += vy * timeStep;
         z += vz * timeStep;
-       // printf("after: %.15f\n", vx);
     }
 
     std::string toString() const {

@@ -14,6 +14,7 @@ inline float THETA_SQ = THETA * THETA;
 
 inline float G_MULTIPLIER = 1.0f;
 inline float TIME_STEP = 1000.0f;
+inline bool ANCHOR = false;
 
 inline const int MAX_HARDWARE_THREADS = std::thread::hardware_concurrency();
 inline int NUM_THREADS = MAX_HARDWARE_THREADS;

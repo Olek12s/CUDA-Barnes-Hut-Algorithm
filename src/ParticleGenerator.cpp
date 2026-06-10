@@ -6,6 +6,8 @@
 #include <random>
 #include <cmath>
 
+#include "Config.h"
+
 constexpr float SPREAD_RADIUS = 50.0f;
 
 void ParticleGenerator::addParticle(std::vector<Particle>& particles, float x, float y, float z, float mass, float vx, float vy, float vz) {
@@ -32,8 +34,11 @@ void ParticleGenerator::createCube(std::vector<Particle> &particles, float x, fl
     }
 }
 
-void ParticleGenerator::createDisc(std::vector<Particle> &particles, float x, float y, float z, int count, float particleMass, float centerMass, float vx, float vy, float vz) {
-    particles.push_back(Particle(x, y, z, centerMass)); // center
+void ParticleGenerator::createDisc(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float centerMass, float minR, float maxR, float vx, float vy, float vz) {
+    Particle center(x, y, z, centerMass, vx, vy, vz);
+    if(ANCHOR) center.setAnchored(true);
+    particles.push_back(center); // center
+
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -42,13 +47,22 @@ void ParticleGenerator::createDisc(std::vector<Particle> &particles, float x, fl
 
     for (int i = 1; i < count; i++) {
         float angle = angleDist(gen);
-        float radius = SPREAD_RADIUS * std::sqrt(uDist(gen));
-        particles.push_back(Particle(x + radius * cos(angle), y + radius * sin(angle), z, particleMass, vx, vy, vz));
+        float r = minR + (maxR - minR) * std::sqrt(uDist(gen)); // random radius between minR maxR
+
+        float orbitalSpeed = std::sqrt(G * G_MULTIPLIER * centerMass / (r + 0.1f));
+
+        // Velocity vector perpendicular to the radius in XY surface
+        float vpx = -sin(angle) * orbitalSpeed*4 + vx;
+        float vpy =  cos(angle) * orbitalSpeed*4 + vy;
+
+        particles.push_back(Particle(x + r * cos(angle), y + r * sin(angle), z, particleMass, vpx, vpy, vz));
     }
 }
 
-void ParticleGenerator::createSphere(std::vector<Particle> &particles, float x, float y, float z, int count, float particleMass, float centerMass, float vx, float vy, float vz) {
-    particles.push_back(Particle(x, y, z, centerMass)); // center
+void ParticleGenerator::createSphere(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float centerMass, float minR, float maxR, float vx, float vy, float vz) {
+    Particle center(x, y, z, centerMass, vx, vy, vz);
+    if(ANCHOR) center.setAnchored(true);
+    particles.push_back(center); // center
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -60,8 +74,7 @@ void ParticleGenerator::createSphere(std::vector<Particle> &particles, float x, 
         float phi = phiDist(gen);
         float costheta = costhetaDist(gen);
         float theta = acos(costheta);
-
-        float r = SPREAD_RADIUS * std::cbrt(uDist(gen));    // cubic root
+        float r = minR + (maxR - minR) * std::cbrt(uDist(gen)); // cubic root
 
         float px = x + r * sin(theta) * cos(phi);
         float py = y + r * sin(theta) * sin(phi);

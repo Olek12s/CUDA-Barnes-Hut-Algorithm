@@ -206,7 +206,7 @@ int main() {
     //   - Each Morton code package corresponds to a single leaf node
 
     size_t n = 000'000;
-    std::vector<Particle> particles(10000);
+    std::vector<Particle> particles;
 
     auto bounds = findMinMax(particles);
     computeMortonCodes(particles, bounds);
