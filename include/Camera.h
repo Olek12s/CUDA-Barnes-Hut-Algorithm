@@ -15,8 +15,8 @@ class Camera {
 public:
     Camera();   // init with default position (0,0,0)
     Camera(float x, float y, float z);
-    void update(GLFWwindow* window);
-    void keyboardInput(GLFWwindow *window);
+    void update(GLFWwindow* window, float deltaTime);
+    void keyboardInput(GLFWwindow *window, float deltaTime);
     void mouseInput(float x, float y);
     glm::vec3 getUpDirection();
     glm::vec3 getRightDirection();

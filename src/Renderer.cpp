@@ -100,6 +100,9 @@ void Renderer::processInput(GLFWwindow* window)
     }
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
+        if (!mouseCaptured) {
+            camera.mouseMoved = true;
+        }
         mouseCaptured = true;
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
@@ -112,8 +115,12 @@ void Renderer::frameTick() {
         return;
     }
 
-    processInput(window);           // keyboard input
-    camera.update(window);          // process camera
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+
+    processInput(window);                      // keyboard input
+    camera.update(window, deltaTime);          // process camera
 
     // ##### rendering calls ##### //
     glClearColor(0,0,0, 1.0f);

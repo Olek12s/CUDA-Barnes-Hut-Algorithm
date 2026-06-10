@@ -10,7 +10,7 @@
 Camera::Camera() {
     position = glm::vec3(0,0,3);
     viewDirection = glm::vec3(0,0,-1);
-    fov = 90.0f;
+    fov = 110.0f;
 
     pitch = 0.f;
     yaw = -90.0f;
@@ -18,7 +18,7 @@ Camera::Camera() {
     lastX = 400;
     lastY = 300;
     mouseMoved = true;
-    speed = 0.1f;
+    speed = 1000.f;
 }
 
 Camera::Camera(float x, float y, float z) {
@@ -43,35 +43,37 @@ glm::vec3 Camera::getUpDirection() {
     return glm::vec3(glm::cross(viewDirection, getRightDirection()));
 }
 
-void Camera::update(GLFWwindow *window) {
+void Camera::update(GLFWwindow *window, float deltaTime) {
     // ##### Handle inputs #####
-    keyboardInput(window);
+    keyboardInput(window, deltaTime);
 }
 
-void Camera::keyboardInput(GLFWwindow *window) {
+void Camera::keyboardInput(GLFWwindow *window, float deltaTime) {
     auto pressed = GLFW_PRESS;
 
     glm::vec3 forward = viewDirection;
     glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0,1,0)));
     glm::vec3 up = glm::vec3(0,1,0);
 
+    float vel = speed * deltaTime;
+
     if (glfwGetKey(window, GLFW_KEY_W) == pressed || glfwGetKey(window, GLFW_KEY_UP) == pressed) {
-        position += speed * forward;
+        position += vel * forward;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == pressed || glfwGetKey(window, GLFW_KEY_LEFT) == pressed) {
-        position += speed * -right;
+        position += vel * -right;
     }
     if (glfwGetKey(window, GLFW_KEY_S) == pressed || glfwGetKey(window, GLFW_KEY_DOWN) == pressed) {
-        position += speed * -forward;
+        position += vel * -forward;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == pressed || glfwGetKey(window, GLFW_KEY_RIGHT) == pressed) {
-        position += speed * right;
+        position += vel * right;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == pressed) {
-        position += speed * -up;
+        position += vel * -up;
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == pressed) {
-        position += speed * up;
+        position += vel * up;
     }
     if (glfwGetKey(window, GLFW_KEY_KP_ADD) == pressed) {
         speed *= 2;
@@ -105,8 +107,12 @@ void Camera::mouseInput(float x, float y) {
     yaw += xoffset;
 
     // lock the camera's angles (at 90 degrees there's  LookAt camera flip)
-    if (pitch > 89.f) pitch = 89.9f;
-    if (pitch < -89.f) pitch = -89.9f;
+    if (yaw > 360.0f) yaw -= 360.0f;
+    if (yaw < -360.0f) yaw += 360.0f;
+    if (pitch > 89.f) pitch = 89.f;
+    if (pitch < -89.f) pitch = -89.f;
+
+    std::cout << "Pitch: " << pitch << " Yaw: " << yaw << " \n";
 
     glm::vec3 dir;
     dir.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

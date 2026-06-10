@@ -20,8 +20,11 @@ private:
     Shader shader;
     unsigned int VBO;   // Vertex Buffer Object
     unsigned int VAO;   // Vertex Array Object
+
     Camera camera;
     bool mouseCaptured = true;
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
 
     static void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // callback each time a window is resized
     static void mouse_callback(GLFWwindow* window, double x, double y);

@@ -166,12 +166,12 @@ std::vector<Particle> generateParticles(size_t n)
     // particles.push_back(Particle(0.1, 0.1 , 0.7));
     float v = 0.00005f;
 
-    particles.push_back(Particle(100000.0, 0.0 , -33330.5, 150000.f));
-    particles.push_back(Particle(1000.0, 1000000.0 , 0.5, 1500000.f));
-    particles.push_back(Particle(10000000.0, 0.0 , 0.5, 150000.f));
-    particles.push_back(Particle(-1000.0, 0.0 , -440000.5, 1500000.f));
-    particles.push_back(Particle(100000.0, 0.0 , 0.5, 1500000.f));
-    particles.push_back(Particle(10000000.0, 0.0 , 0.5, 150000.f));
+   // particles.push_back(Particle(100000.0, 0.0 , -33330.5, 150000.f));
+   // particles.push_back(Particle(1000.0, 1000000.0 , 0.5, 1500000.f));
+   // particles.push_back(Particle(10000000.0, 0.0 , 0.5, 150000.f));
+    // particles.push_back(Particle(-1000.0, 0.0 , -440000.5, 1500000.f));
+    particles.push_back(Particle(1.0, 100.0 , 0.5, 1.f));
+    particles.push_back(Particle(1.0, 105.0 , 0.5, 150000.f));
     return particles;
 }
 
@@ -216,7 +216,7 @@ int main() {
     // Level 21 (last package, node size = 2000 / 2^21 ~ 0.00095):
     //   - Each Morton code package corresponds to a single leaf node
 
-    size_t n = 200'000;
+    size_t n = 00'000;
     std::vector<Particle> particles = generateParticles(n);
 
     auto bounds = findMinMax(particles);
@@ -257,7 +257,7 @@ int main() {
     int frameCount = 0;
 
 
-    float timeStep = 10000.f;
+    float timeStep = 1000.f;
     while (!renderer.isTerminated) {
         // 1. render
         auto t0 = std::chrono::high_resolution_clock::now();
