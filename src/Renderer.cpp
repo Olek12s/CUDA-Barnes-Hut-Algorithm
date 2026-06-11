@@ -201,6 +201,18 @@ void Renderer::prepareImGuiFrame() {
     //ImGui::SliderFloat("G Multiplier", &G_MULTIPLIER, 0.0f, 300.0f);
     ImGui::InputFloat("G Multiplier", &G_MULTIPLIER, 1.0f, 10.0f, "%.1f");
 
+    // split at, only powers of 2 allowed
+    int power = 0;
+    while ((int)std::pow(2, power) < SPLIT_AT_LEAF_SIZE && power < 13) {
+        power++;
+    }
+    char format_buf[32];
+    snprintf(format_buf, sizeof(format_buf), "%d", 1 << power);
+    if (ImGui::SliderInt("Split at", &power, 0, 13, format_buf)) {
+        SPLIT_AT_LEAF_SIZE = (int)std::pow(2, power);
+    }
+
+
     if (ImGui::SliderFloat("Theta", &THETA, 0.0f, 5.0f)) THETA_SQ = THETA * THETA;
     if (ImGui::SliderFloat("Epsilon", &EPSILON, 0.01f, 5.0f)) EPSILON_SQ = EPSILON * EPSILON;
 
@@ -214,6 +226,9 @@ void Renderer::prepareImGuiFrame() {
     ImGui::Separator();
     ImGui::Text("TPS: %.1f", ImGui::GetIO().Framerate);
     ImGui::Text("Current Bodies: %zu", particles->size());
+    ImGui::Text("Nodes: %d", octree->nodeCount);
+    ImGui::Text("COM interactions: %d", COM_INTERACTIONS);
+    ImGui::Text("Direct interactions: %d", DIRECT_INTERACTIONS);
 
     if (ImGui::Button("Remove Bodies", ImVec2(-1, 0))) {
         particles->clear();

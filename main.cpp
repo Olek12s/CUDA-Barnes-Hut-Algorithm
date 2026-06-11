@@ -236,9 +236,9 @@ int main() {
     }
    // std::cout << "Monotonic Z_CODE: " << (monotone ? "OK" : "FAIL") << "\n\n\n";
 
-    Renderer renderer(particles);
-    renderer.init();
     Octtree octtree;
+    Renderer renderer(particles, octtree);
+    renderer.init();
 
     std::array<double, 11> timings = {0.0};
 
