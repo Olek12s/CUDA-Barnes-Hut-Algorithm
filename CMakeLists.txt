@@ -23,7 +23,6 @@ add_executable(Barnes-Hut-Licencjat
         ${IMGUI_SOURCES}
         include/ParticleGenerator.h
         src/ParticleGenerator.cpp
-        src/ParticleGenerator.h
 )
 
 target_include_directories(Barnes-Hut-Licencjat PRIVATE

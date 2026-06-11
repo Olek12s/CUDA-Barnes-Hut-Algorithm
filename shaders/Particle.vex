@@ -3,18 +3,15 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 velocity;
 
-out vec3 color;
+out vec3 particleColor;
 
-
-uniform mat4 model;             // position, rotation, scale
-uniform mat4 view;              // camera pos, direction of looking
-uniform mat4 projection;        // fov, proportions, clipping
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
 void main()
 {
-    //gl_Position = vec4(position.x, position.y, position.z, 1.0);
     gl_Position = projection * view * model * vec4(position.x, position.y, position.z, 1.0);
 
-    //color = normalize(velocity) * 0.5 + 0.5;
-    color = vec3(0, 0, 0.7);
+    particleColor = vec3(0.1, 0.8, 0.8);
 }

@@ -11,7 +11,9 @@
 constexpr float SPREAD_RADIUS = 50.0f;
 
 void ParticleGenerator::addParticle(std::vector<Particle>& particles, float x, float y, float z, float mass, float vx, float vy, float vz) {
-    particles.push_back(Particle(x, y, z, mass, vx, vy, vz));
+    Particle particle(x, y, z, mass, vx, vy, vz);
+    if(ANCHOR) particle.setAnchored(true);
+    particles.push_back(particle);
 }
 
 void ParticleGenerator::createFlatRectangle(std::vector<Particle> &particles, float x, float y, float z, int count, float particleMass, float vx, float vy, float vz) {
@@ -52,8 +54,8 @@ void ParticleGenerator::createDisc(std::vector<Particle>& particles, float x, fl
         float orbitalSpeed = std::sqrt(G * G_MULTIPLIER * centerMass / (r + 0.1f));
 
         // Velocity vector perpendicular to the radius in XY surface
-        float vpx = -sin(angle) * orbitalSpeed*4 + vx;
-        float vpy =  cos(angle) * orbitalSpeed*4 + vy;
+        float vpx = -sin(angle) * orbitalSpeed + vx;
+        float vpy =  cos(angle) * orbitalSpeed + vy;
 
         particles.push_back(Particle(x + r * cos(angle), y + r * sin(angle), z, particleMass, vpx, vpy, vz));
     }

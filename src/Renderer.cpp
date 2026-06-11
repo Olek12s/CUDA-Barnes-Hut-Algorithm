@@ -77,7 +77,7 @@ void Renderer::init() {
     shader.use();
 
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
 
     glPointSize(4.0f);
@@ -235,7 +235,7 @@ void Renderer::prepareImGuiFrame() {
     ImGui::InputFloat("Particle Mass", &genParticleMass, 100.0f, 1000.0f, "%.1f");
     ImGui::InputFloat("Center Mass", &genCenterMass, 1000.0f, 10000.0f, "%.1f");
     ImGui::InputInt("Count", &genCount, 1000, 10000);
-    ImGui::Checkbox("Anchor:", &ANCHOR);
+    ImGui::Checkbox("Anchor", &ANCHOR);
 
     glm::vec3 FOC = camera.position + camera.viewDirection * 150.0f;      // front of camera
     glm::vec3 CVV = camera.getVelocityVector() * (deltaTime / TIME_STEP); // camera velocity vector
