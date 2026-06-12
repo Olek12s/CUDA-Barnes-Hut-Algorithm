@@ -11,9 +11,9 @@ file(GLOB IMGUI_SOURCES "${CMAKE_SOURCE_DIR}/include/imgui/*.cpp")
 
 add_executable(Barnes-Hut-Licencjat
         main.cpp
-        src/Octtree.cpp
-        include/Octtree.h
-        include/Config.h
+        src/Octree.cpp
+        include/Octree.h
+        include/Globals.h
         include/Particle.h
         src/Renderer.cpp
         include/Renderer.h

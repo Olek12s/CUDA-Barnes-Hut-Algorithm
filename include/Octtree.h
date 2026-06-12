@@ -62,10 +62,6 @@ public:
     void computeMassDistribution(const std::vector<Particle>& particles);
 
     void computeForcesAffectingParticle(int nodeIndex, Particle& particle, const std::vector<Particle>& particles);
-
-    // void insertBodies();
-    // void updateMassDistribution();
-    // void updateGravAcceleration();
 };
 
 
