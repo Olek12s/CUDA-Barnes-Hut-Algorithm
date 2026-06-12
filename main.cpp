@@ -10,7 +10,7 @@
 #include <chrono>
 
 #include "Globals.h"
-#include "Octtree.h"
+#include "Octree.h"
 #include "Renderer.h"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
@@ -236,7 +236,7 @@ int main() {
     }
    // std::cout << "Monotonic Z_CODE: " << (monotone ? "OK" : "FAIL") << "\n\n\n";
 
-    Octtree octtree;
+    Octree octtree;
     Renderer renderer(particles, octtree);
     renderer.init();
 

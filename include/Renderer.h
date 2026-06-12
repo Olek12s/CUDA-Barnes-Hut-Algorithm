@@ -10,13 +10,13 @@
 #include <GLFW/glfw3.h>
 
 #include "Camera.h"
-#include "Octtree.h"
+#include "Octree.h"
 #include "Particle.h"
 #include "Shader.h"
 
 class Renderer {
     std::vector<Particle>* particles;
-    Octtree* octree;
+    Octree* octree;
     GLFWwindow* window;
     Shader shader;
     unsigned int VBO;   // Vertex Buffer Object
@@ -31,7 +31,7 @@ class Renderer {
     static void mouse_callback(GLFWwindow* window, double x, double y);                  // callback each time a mouse is moved
     void processInput(GLFWwindow* window);
 public:
-    Renderer(std::vector<Particle> &particles, Octtree &octtree): particles(&particles), octree(&octtree)  {}
+    Renderer(std::vector<Particle> &particles, Octree &octtree): particles(&particles), octree(&octtree)  {}
     void init();
     void initFrame();
     void prepareImGuiFrame();

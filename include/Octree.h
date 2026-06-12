@@ -1,5 +1,5 @@
-#ifndef OCTTREE_H
-#define OCTTREE_H
+#ifndef OCTREE_H
+#define OCTREE_H
 #include <vector>
 #include <iostream>
 #include <array>
@@ -28,7 +28,7 @@ struct Node {
     bool isLeaf();
 };
 
-class Octtree {
+class Octree {
     std::vector<Node> nodes;    // whole tree structure sits here with all the informations
     int rootNode = 0;           // root node has always index 0
 
@@ -61,9 +61,10 @@ public:
     // computes mass dist. among tree nodes in BOTTOM-UP nature. If node leaf - bodies of this node are taking in calculation, else calculate node's children first
     void computeMassDistribution(const std::vector<Particle>& particles);
 
+    // compute forces affecting given particle with barnes-hut approach using Centers of mass if criterias with THETA are met. Top-down approach.
     void computeForcesAffectingParticle(int nodeIndex, Particle& particle, const std::vector<Particle>& particles);
 };
 
 
 
-#endif //OCTTREE_H
+#endif //OCTREE_H
