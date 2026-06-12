@@ -15,7 +15,6 @@
 #include "Shader.h"
 
 class Renderer {
-private:
     std::vector<Particle>* particles;
     Octtree* octree;
     GLFWwindow* window;
@@ -23,14 +22,13 @@ private:
     unsigned int VBO;   // Vertex Buffer Object
     unsigned int VAO;   // Vertex Array Object
 
-    Camera camera;
     bool mouseCaptured = true;
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
     int lastParticleCount = 0;
 
     static void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // callback each time a window is resized
-    static void mouse_callback(GLFWwindow* window, double x, double y);
+    static void mouse_callback(GLFWwindow* window, double x, double y);                  // callback each time a mouse is moved
     void processInput(GLFWwindow* window);
 public:
     Renderer(std::vector<Particle> &particles, Octtree &octtree): particles(&particles), octree(&octtree)  {}
@@ -38,8 +36,8 @@ public:
     void initFrame();
     void prepareImGuiFrame();
     void renderFrame();
-    glm::vec3 getCameraXYZ();
 
+    Camera camera;
     bool isTerminated = false;
     float currentTPS = 0.0f;
 };

@@ -5,7 +5,7 @@
 #include <array>
 #include <algorithm>
 
-#include "Config.h"
+#include "Globals.h"
 
 
 bool Node::isEmpty() const {

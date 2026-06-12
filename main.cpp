@@ -9,7 +9,7 @@
 #include <thread>
 #include <chrono>
 
-#include "Config.h"
+#include "Globals.h"
 #include "Octtree.h"
 #include "Renderer.h"
 #include "glad/glad.h"
@@ -354,7 +354,7 @@ int main() {
         if (elapsed >= 1000)    // once per second
         {
             double fps = frameCount * 1000.0 / elapsed;
-            std::cout << "\nCAM pos: [" << renderer.getCameraXYZ().x << ", " << renderer.getCameraXYZ().y << ", " << renderer.getCameraXYZ().z << "]\n";
+            std::cout << "\nCAM pos: [" << renderer.camera.position.x << ", " << renderer.camera.position.y << ", " << renderer.camera.position.z << "]\n";
             std::cout << "FPS: " << fps << '\n';
             std::cout << "Nodes: " << octtree.nodeCount << "\n";
 
