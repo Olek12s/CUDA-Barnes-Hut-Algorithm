@@ -9,7 +9,7 @@
 #include <iostream>
 #include <thread>
 
-#include "Config.h"
+#include "Globals.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -134,7 +134,7 @@ void Renderer::initFrame() {
     lastFrame = currentFrame;
 
     processInput(window);               // keyboard input
-    camera.update(window, deltaTime);   // process camera
+    camera.update(window, deltaTime);   // process camera's buttons
 
     // Clear off window's context
     glClearColor(0,0,0, 1.0f);
@@ -198,7 +198,6 @@ void Renderer::prepareImGuiFrame() {
     // ##### CONFIG #####
 
     ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Config variables:");
-    //ImGui::SliderFloat("G Multiplier", &G_MULTIPLIER, 0.0f, 300.0f);
     ImGui::InputFloat("G Multiplier", &G_MULTIPLIER, 1.0f, 10.0f, "%.1f");
 
     // split at, only powers of 2 allowed
@@ -212,13 +211,9 @@ void Renderer::prepareImGuiFrame() {
         SPLIT_AT_LEAF_SIZE = (int)std::pow(2, power);
     }
 
-
     if (ImGui::SliderFloat("Theta", &THETA, 0.0f, 5.0f)) THETA_SQ = THETA * THETA;
     if (ImGui::SliderFloat("Epsilon", &EPSILON, 0.01f, 5.0f)) EPSILON_SQ = EPSILON * EPSILON;
-
-
-    //ImGui::SliderFloat("Timestep", &TIME_STEP, 0.0f, 50000.0f);
-    ImGui::InputFloat("Timestep", &TIME_STEP, 1.0f, 100.0f, "%.1f");
+    ImGui::InputFloat("Timestep", &TIME_STEP, 10.0f, 1000.0f, "%.1f");
     ImGui::SliderInt("Threads", &NUM_THREADS, 1, MAX_HARDWARE_THREADS);
 
     // ##### CONFIG #####
@@ -230,20 +225,11 @@ void Renderer::prepareImGuiFrame() {
     ImGui::Text("COM interactions: %d", COM_INTERACTIONS);
     ImGui::Text("Direct interactions: %d", DIRECT_INTERACTIONS);
 
-    if (ImGui::Button("Remove Bodies", ImVec2(-1, 0))) {
-        particles->clear();
-    }
+    if (ImGui::Button("Remove Bodies", ImVec2(-1, 0))) particles->clear();
     ImGui::Separator();
 
     // ##### PARTICLE GENERATOR #####
-
     ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Particle Generator:");
-
-    static float genParticleMass = 1.0f;
-    static float genCenterMass = 150000.0f;
-    static int genCount = 10000;
-    static float minRadius = 1000.0f;
-    static float maxRadius = 10000.0f;
 
     ImGui::InputFloat("Min Radius", &minRadius, 100.0f, 1000.0f, "%.1f");
     ImGui::InputFloat("Max Radius", &maxRadius, 100.0f, 1000.0f, "%.1f");
@@ -253,7 +239,7 @@ void Renderer::prepareImGuiFrame() {
     ImGui::Checkbox("Anchor", &ANCHOR);
 
     glm::vec3 FOC = camera.position + camera.viewDirection * 150.0f;      // front of camera
-    glm::vec3 CVV = camera.getVelocityVector() * (deltaTime / TIME_STEP); // camera velocity vector
+    glm::vec3 CVV = camera.currentVelocity * (deltaTime / TIME_STEP);     // camera velocity vector
 
     if (ImGui::Button("Create Particle", ImVec2(-1, 0))) {
         ParticleGenerator::addParticle(*particles, FOC.x, FOC.y, FOC.z, genParticleMass, CVV.x, CVV.y, CVV.z);
@@ -270,31 +256,21 @@ void Renderer::prepareImGuiFrame() {
     if (ImGui::Button("Create Sphere", ImVec2(-1, 0))) {
         ParticleGenerator::createSphere(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, minRadius, maxRadius, CVV.x, CVV.y, CVV.z);
     }
-
     // ##### PARTICLE GENERATOR #####
 
 
     // ##### CAMERA #####
-
     ImGui::Separator();
 
-    if (ImGui::Button("Reset position", ImVec2(-1, 0))) {
-        camera.position = glm::vec3(0,0,0);
-    }
+    if (ImGui::Button("Reset position", ImVec2(-1, 0))) camera.position = glm::vec3(0,0,0);
     ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Camera:");
     ImGui::Text("Speed: %.1f", camera.speed);
     ImGui::Text("Pitch: %.1f", camera.pitch);
     ImGui::Text("Yaw: %.1f", camera.yaw);
     ImGui::Text("Cam Pos: %.2f, %.2f, %.2f", camera.position.x, camera.position.y, camera.position.z);
-
     // ##### CAMERA #####
 
     ImGui::End();
-}
-
-
-glm::vec3 Renderer::getCameraXYZ() {
-    return camera.position;
 }
 
 

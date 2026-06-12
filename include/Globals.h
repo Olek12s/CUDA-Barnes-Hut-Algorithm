@@ -22,4 +22,13 @@ inline int DIRECT_INTERACTIONS = 0;
 inline const int MAX_HARDWARE_THREADS = std::thread::hardware_concurrency();
 inline int NUM_THREADS = MAX_HARDWARE_THREADS;
 
+
+// ##### VARIABLES FOR IM GUI ##### //
+inline float genParticleMass = 1.0f;
+inline  float genCenterMass = 150000.0f;
+inline  int genCount = 10000;
+inline  float minRadius = 1000.0f;
+inline  float maxRadius = 10000.0f;
+// ##### VARIABLES FOR IM GUI ##### //
+
 #endif //CONFIG_H

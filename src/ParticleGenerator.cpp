@@ -6,7 +6,7 @@
 #include <random>
 #include <cmath>
 
-#include "Config.h"
+#include "Globals.h"
 
 constexpr float SPREAD_RADIUS = 50.0f;
 
