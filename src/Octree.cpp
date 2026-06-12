@@ -212,10 +212,12 @@ void Octree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, c
         float invDist3 = invDist * invDist * invDist;
         float factor = G * G_MULTIPLIER * node.mass * invDist3; // check the node's COM
 
-        if (node.end - node.start > 1) {
-            COM_INTERACTIONS++;
-        } else {
-            DIRECT_INTERACTIONS++;
+        if (countInteractions) {
+            if (node.end - node.start > 1) {
+                COM_INTERACTIONS++;
+            } else {
+                DIRECT_INTERACTIONS++;
+            }
         }
 
         particle.ax += dx * factor;

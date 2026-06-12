@@ -25,10 +25,11 @@ inline int NUM_THREADS = MAX_HARDWARE_THREADS;
 
 // ##### VARIABLES FOR IM GUI ##### //
 inline float genParticleMass = 1.0f;
-inline  float genCenterMass = 150000.0f;
-inline  int genCount = 10000;
-inline  float minRadius = 1000.0f;
-inline  float maxRadius = 10000.0f;
+inline float genCenterMass = 150000.0f;
+inline int genCount = 10000;
+inline float minRadius = 1000.0f;
+inline float maxRadius = 10000.0f;
+inline bool countInteractions = false;
 // ##### VARIABLES FOR IM GUI ##### //
 
 #endif //CONFIG_H

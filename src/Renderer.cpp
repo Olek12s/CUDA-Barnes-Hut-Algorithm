@@ -224,7 +224,7 @@ void Renderer::prepareImGuiFrame() {
     ImGui::Text("Nodes: %d", octree->nodeCount);
     ImGui::Text("COM interactions: %d", COM_INTERACTIONS);
     ImGui::Text("Direct interactions: %d", DIRECT_INTERACTIONS);
-
+    ImGui::Checkbox("Count Interactions", &countInteractions);
     if (ImGui::Button("Remove Bodies", ImVec2(-1, 0))) particles->clear();
     ImGui::Separator();
 

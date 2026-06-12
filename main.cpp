@@ -15,14 +15,14 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
-int glTest();
-void cudaApiTest();
-
 // scale float value to new value between [0, 21bits]
 unsigned int scale(float f, float fmin, float fmax) {
 
-    float clamped = (f - fmin) / (fmax - fmin); // [0,1]
+    float clamped = (f - fmin) / (fmax - fmin); // clamp to the [0...1] value.      // fmax - fmin - whole width of the world. f - fmin - how for particle is from the left wall of the world
 
+    // if particle is at 0 - It's on the left wall
+    // if particle is at 1 - It's on the right wall
+    // if particle is at ~0.5 - It's at the middle
     if(clamped < 0.f) clamped = 0.f;
     if(clamped > 1.f) clamped = 1.f;
     return (unsigned int)(clamped * MORTON_SCALE);
@@ -36,7 +36,7 @@ unsigned int scale(float f, float fmin, float fmax) {
 //      morton |= ((z >> i) & 1ull) << (3*i+2);
 //
 //  But above method is multiple times slower than the one below.
-
+// example expanded value: 100100100100100 (Where 1 can be either 1 or 0 and 0 is always 0 - hold no value for 32bit value).
 uint64_t expand(unsigned int v) {
     uint64_t x = v & 0x1fffff;
     // 21 bits       // 0b00000000 00000000 00000000 00000000 00000000 00011111 11111111 11111111
@@ -57,7 +57,6 @@ uint64_t expand(unsigned int v) {
 
     // a00b00c00d00     spacing: 3
     x = (x | x << 2)  & 0x1249249249249249;     // 0b00010010 01001001 00100100 10010010 01001001 00100100 10010010 01001001
-
 
     return x;
 }
@@ -91,11 +90,35 @@ uint64_t getMortonCodeFrom3D(float x, float y, float z, const std::array<std::pa
     return xx | (yy << 1) | (zz << 2);
 }
 
+uint64_t getMortonCodeFrom3DNaive(float x, float y, float z, const std::array<std::pair<float,float>,3>& bounds) {
+    // scale
+    uint64_t xs = scale(x, bounds[0].first, bounds[0].second);
+    uint64_t ys = scale(y, bounds[1].first, bounds[1].second);
+    uint64_t zs = scale(z, bounds[2].first, bounds[2].second);
+
+    uint64_t morton = 0;
+
+    // naive loop through all 21 bits
+    for (int i = 0; i < 21; i++) {
+        // X bit goes to 3*i in morton code
+        morton |= ((xs >> i) & 1ull) << (3 * i);
+
+        // Y bit goes to 3*i + 1 in morton code
+        morton |= ((ys >> i) & 1ull) << (3 * i + 1);
+
+        // Z bit goes to 3*i + 2 in morton code
+        morton |= ((zs >> i) & 1ull) << (3 * i + 2);
+    }
+
+    return morton;
+}
+
 void computeMortonCodes(std::vector<Particle>& particles,const std::array<std::pair<float,float>,3>& bounds)
 {
     for(auto& p : particles)
     {
         p.Z_CODE = getMortonCodeFrom3D(p.x, p.y, p.z, bounds);
+        //p.Z_CODE = getMortonCodeFrom3DNaive(p.x, p.y, p.z, bounds);
     }
 }
 
@@ -136,40 +159,7 @@ std::array<std::pair<float,float>, 3> findMinMax(std::vector<Particle>& particle
     return bounds;
 }
 
-std::vector<Particle> generateParticles(size_t n)
-{
-    std::vector<Particle> particles;
-    particles.reserve(n);
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(-1000.0f, 1.0f);
-
-    for (size_t i = 0; i < n; i++)
-    {
-        float x = dist(gen);
-        float y = dist(gen);
-        float z = dist(gen);
-        float mass = 100;
-
-        Particle p{x, y, z, mass}; // zero-initialization (IMPORTANT)
-
-        particles.push_back(p);
-    }
-
-
-
-    particles.push_back(Particle(1.0, 100.0 , 0.5, 1.f));
-    particles.push_back(Particle(1.0, 105.0 , 0.5, 1500000.f));
-    return particles;
-}
-
-void buildTree(std::vector<Particle> &sortedParticles) {
-
-}
-
 int main() {
-
     // Packets for tree are distributed as:
 
     // Bounding box: [-1000, 1000] along each axis
@@ -205,58 +195,28 @@ int main() {
     // Level 21 (last package, node size = 2000 / 2^21 ~ 0.00095):
     //   - Each Morton code package corresponds to a single leaf node
 
-    size_t n = 000'000;
+
     std::vector<Particle> particles;
-
-    auto bounds = findMinMax(particles);
-    computeMortonCodes(particles, bounds);
-    std::sort(particles.begin(), particles.end(), comp);
-
-    bool monotone = true;
-    for(size_t i = 1; i < particles.size(); i++)
-    {
-        if(particles[i].Z_CODE < particles[i-1].Z_CODE)
-        {
-            monotone = false;
-            break;
-        }
-    }
-
-    for (auto &p : particles) {
-        //std::cout << p.Z_CODE << "\n";
-       // std::cout << std::bitset<64>(p.Z_CODE) << "\n";
-       // std::cout << "(" << p.x << ", " << p.y << ", " << p.z << ")    ";
-        std::bitset<64> bits(p.Z_CODE);
-        for (int i = 63; i >= 0; --i)
-        {
-          //  std::cout << bits[i];
-          //  if (i == 63 || (i % 3 == 0 && i != 0))std::cout << ' ';
-        }
-      //  std::cout << '\n';
-    }
-   // std::cout << "Monotonic Z_CODE: " << (monotone ? "OK" : "FAIL") << "\n\n\n";
-
     Octree octtree;
     Renderer renderer(particles, octtree);
     renderer.init();
 
     std::array<double, 11> timings = {0.0};
-
-    auto fpsTimer = std::chrono::steady_clock::now();
+    auto tpsTimer = std::chrono::steady_clock::now();
     int frameCount = 0;
-
 
     while (!renderer.isTerminated) {
         // 1. render
         auto t0 = std::chrono::high_resolution_clock::now();
-        //renderer.frameTick();
         renderer.initFrame();
+        renderer.prepareImGuiFrame();   // prepare imgui window
+        renderer.renderFrame();         // render particles
+        frameCount++;
         timings[0] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2. integrate w/ leapfrog (velocity step 1/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
-            //std::cout << "mass=" << p.mass << " ax=" << p.ax << "\n";
             p.leapFrogVelStep(TIME_STEP * 0.5f);
         }
         timings[1] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
@@ -302,8 +262,6 @@ int main() {
 
         // 9. compute forces (multithread)
         t0 = std::chrono::high_resolution_clock::now();
-
-
         std::vector<std::thread> threads;
         threads.reserve(NUM_THREADS);
 
@@ -323,17 +281,15 @@ int main() {
             size_t start = t * chunk;
             size_t end = std::min(start + chunk, n);
 
-            threads.emplace_back(worker, start, end);
+            threads.emplace_back(worker, start, end);   // start
         }
 
         for (auto &th : threads)
         {
-            th.join();
+            th.join();  // sync barrier
         }
 
-        timings[9] = std::chrono::duration<double, std::milli>(
-            std::chrono::high_resolution_clock::now() - t0
-        ).count();
+        timings[9] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 10. integrate w/ leapfrog (velocity step 2/2)
         t0 = std::chrono::high_resolution_clock::now();
@@ -343,13 +299,8 @@ int main() {
         }
         timings[10] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        renderer.prepareImGuiFrame();   // prepare imgui window
-        renderer.renderFrame();         // render particles
-
-        frameCount++;
         auto now = std::chrono::steady_clock::now();
-
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - fpsTimer).count();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - tpsTimer).count();
 
         if (elapsed >= 1000)    // once per second
         {
@@ -358,7 +309,7 @@ int main() {
             std::cout << "FPS: " << fps << '\n';
             std::cout << "Nodes: " << octtree.nodeCount << "\n";
 
-            fpsTimer = now;
+            tpsTimer = now;
             double totalTime = 0.0;
             for (double t : timings) {
                 totalTime += t;
@@ -397,8 +348,5 @@ int main() {
             frameCount = 0;
         }
     }
-
-    //cudaApiTest();
-    //glTest();
     return 0;
 }
