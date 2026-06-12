@@ -84,6 +84,8 @@ void Octtree::findChildRanges(const std::vector<Particle> &particles, int start,
 void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
     nodes.clear();  // clear off nodes vector
     nodeCount = 0;
+    COM_INTERACTIONS = 0;
+    DIRECT_INTERACTIONS = 0;
     float rootSize = findRootSize(sortedParticles);  // find rootSize
 
     Node root(0, sortedParticles.size(), -1, rootSize);
@@ -105,10 +107,8 @@ void Octtree::buildTree(std::vector<Particle> &sortedParticles) {
         int count = nodes[nodeIndex].end - nodes[nodeIndex].start;
 
         if (count <= SPLIT_AT_LEAF_SIZE || level >= MAX_MORTON_BITS) {
-            if (level >= MAX_MORTON_BITS) std::cout << "Level over " << MAX_MORTON_BITS << "." << " \n";
-            // node.isLeaf = true;
-            // node.firstChild = -1;
-            // continue;
+            //if (level >= MAX_MORTON_BITS) std::cout << "Level over " << MAX_MORTON_BITS << "." << " \n";
+
             nodes[nodeIndex].firstChild = -1;
             continue;
         }
@@ -234,7 +234,13 @@ void Octtree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, 
     if (node.isLeaf() || (sizeSq < distSq * thetaSq)) {
         float invDist = 1.0f / sqrtf(distSq);
         float invDist3 = invDist * invDist * invDist;
-        float factor = G * node.mass * invDist3;
+        float factor = G * G_MULTIPLIER * node.mass * invDist3; // check the node's COM
+
+        if (node.end - node.start > 1) {
+            COM_INTERACTIONS++;
+        } else {
+            DIRECT_INTERACTIONS++;
+        }
 
         particle.ax += dx * factor;
         particle.ay += dy * factor;

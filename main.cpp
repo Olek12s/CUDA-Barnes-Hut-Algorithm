@@ -9,6 +9,7 @@
 #include <thread>
 #include <chrono>
 
+#include "Config.h"
 #include "Octtree.h"
 #include "Renderer.h"
 #include "glad/glad.h"
@@ -16,10 +17,6 @@
 
 int glTest();
 void cudaApiTest();
-
-constexpr int MAX_MORTON_BITS = 21; // Z_CODE has 64 unsigned bit type - code is defined by 3 values, thus maximum morton bits is 64/3 = 21
-constexpr unsigned int MORTON_SCALE = (1u << MAX_MORTON_BITS) - 1u; // 2097151, or std::pow(2, 21
-                                                                    //Morton_SCALE is in other words the biggest digit possible toencode on 21 btis
 
 // scale float value to new value between [0, 21bits]
 unsigned int scale(float f, float fmin, float fmax) {
@@ -146,7 +143,7 @@ std::vector<Particle> generateParticles(size_t n)
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(-1000.0f, 1000.0f);
+    std::uniform_real_distribution<float> dist(-1000.0f, 1.0f);
 
     for (size_t i = 0; i < n; i++)
     {
@@ -159,18 +156,11 @@ std::vector<Particle> generateParticles(size_t n)
 
         particles.push_back(p);
     }
-    // particles.push_back(Particle(0.3, 0.5 , 0));
-    // particles.push_back(Particle(0.2, 0.1 , 0.7));
-    // particles.push_back(Particle(0.7, 0.7 , 0.5));
-    // particles.push_back(Particle(0.2, 0.5 , 0));
-    // particles.push_back(Particle(0.1, 0.1 , 0.7));
-    float v = 0.00005f;
 
-    particles.push_back(Particle( 0.3f,-0.3f,0.5f,1.0f,  v,  v,0.0f));
-    particles.push_back(Particle(-0.3f, 0.3f,0.5f,1.0f, -v, -v,0.0f));
-    particles.push_back(Particle(-0.3f,-0.3f,0.5f,1.0f,  v, -v,0.0f));
-    particles.push_back(Particle( 0.3f, 0.3f,0.5f,1.0f, -v,  v,0.0f));
-    particles.push_back(Particle(0.0, 0.0 , 0.5, 150.f));
+
+
+    particles.push_back(Particle(1.0, 100.0 , 0.5, 1.f));
+    particles.push_back(Particle(1.0, 105.0 , 0.5, 1500000.f));
     return particles;
 }
 
@@ -215,8 +205,8 @@ int main() {
     // Level 21 (last package, node size = 2000 / 2^21 ~ 0.00095):
     //   - Each Morton code package corresponds to a single leaf node
 
-    size_t n = 60'000;
-    std::vector<Particle> particles = generateParticles(n);
+    size_t n = 000'000;
+    std::vector<Particle> particles;
 
     auto bounds = findMinMax(particles);
     computeMortonCodes(particles, bounds);
@@ -246,9 +236,9 @@ int main() {
     }
    // std::cout << "Monotonic Z_CODE: " << (monotone ? "OK" : "FAIL") << "\n\n\n";
 
-    Renderer renderer(particles);
-    renderer.init();
     Octtree octtree;
+    Renderer renderer(particles, octtree);
+    renderer.init();
 
     std::array<double, 11> timings = {0.0};
 
@@ -256,25 +246,25 @@ int main() {
     int frameCount = 0;
 
 
-    float timeStep = 750'000.f;
     while (!renderer.isTerminated) {
         // 1. render
         auto t0 = std::chrono::high_resolution_clock::now();
-        renderer.frameTick();
+        //renderer.frameTick();
+        renderer.initFrame();
         timings[0] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2. integrate w/ leapfrog (velocity step 1/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             //std::cout << "mass=" << p.mass << " ax=" << p.ax << "\n";
-            p.leapFrogVelStep(timeStep * 0.5f);
+            p.leapFrogVelStep(TIME_STEP * 0.5f);
         }
         timings[1] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2.5 integrate w/ leapfrog (position step)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
-            p.leapFrogPosStep(timeStep);
+            p.leapFrogPosStep(TIME_STEP);
         }
         timings[2] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
@@ -310,30 +300,61 @@ int main() {
         }
         timings[8] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // 9. compute forces
+        // 9. compute forces (multithread)
         t0 = std::chrono::high_resolution_clock::now();
-        for (auto &p : particles) {
-            octtree.computeForcesAffectingParticle(0, p, particles);
+
+
+        std::vector<std::thread> threads;
+        threads.reserve(NUM_THREADS);
+
+        auto worker = [&](size_t start, size_t end)
+        {
+            for (size_t i = start; i < end; i++)
+            {
+                octtree.computeForcesAffectingParticle(0, particles[i], particles);
+            }
+        };
+
+        size_t n = particles.size();
+        size_t chunk = (n + NUM_THREADS - 1) / NUM_THREADS;
+
+        for (unsigned int t = 0; t < NUM_THREADS; t++)
+        {
+            size_t start = t * chunk;
+            size_t end = std::min(start + chunk, n);
+
+            threads.emplace_back(worker, start, end);
         }
-        timings[9] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+
+        for (auto &th : threads)
+        {
+            th.join();
+        }
+
+        timings[9] = std::chrono::duration<double, std::milli>(
+            std::chrono::high_resolution_clock::now() - t0
+        ).count();
 
         // 10. integrate w/ leapfrog (velocity step 2/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
-            p.leapFrogVelStep(timeStep * 0.5f);
-            //p.leapFrogPosStep(timeStep);  posstep should appear twice
+            p.leapFrogVelStep(TIME_STEP * 0.5f);
+            //p.leapFrogPosStep(TIME_STEP);  posstep should appear twice
         }
         timings[10] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        //std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        renderer.prepareImGuiFrame();   // prepare imgui window
+        renderer.renderFrame();         // render particles
+
         frameCount++;
         auto now = std::chrono::steady_clock::now();
 
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - fpsTimer).count();
 
-        if (elapsed >= 1000)
+        if (elapsed >= 1000)    // once per second
         {
             double fps = frameCount * 1000.0 / elapsed;
+            std::cout << "\nCAM pos: [" << renderer.getCameraXYZ().x << ", " << renderer.getCameraXYZ().y << ", " << renderer.getCameraXYZ().z << "]\n";
             std::cout << "FPS: " << fps << '\n';
             std::cout << "Nodes: " << octtree.nodeCount << "\n";
 

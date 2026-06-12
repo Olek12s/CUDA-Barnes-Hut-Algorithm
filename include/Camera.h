@@ -15,14 +15,15 @@ class Camera {
 public:
     Camera();   // init with default position (0,0,0)
     Camera(float x, float y, float z);
-    void update(GLFWwindow* window);
-    void keyboardInput(GLFWwindow *window);
+    void update(GLFWwindow* window, float deltaTime);
+    void keyboardInput(GLFWwindow *window, float deltaTime);
     void mouseInput(float x, float y);
     glm::vec3 getUpDirection();
     glm::vec3 getRightDirection();
+    glm::vec3 getVelocityVector();
     glm::mat4 getViewMatrix();
     glm::mat4 getProjectionMatrix(float aspectRatio) const;
-private:
+
     float pitch;
     float yaw;
 
@@ -34,6 +35,11 @@ private:
     glm::vec3 position;         // position of camera in world
     glm::vec3 viewDirection;    // direction of looking, default (1,0,0)
     glm::mat4 view;             // View matrix which transforms world space into camera (view) space
+
+private:
+    bool lastAddPressed = false;
+    bool lastSubPressed = false;
+    glm::vec3 currentVelocity;
 };
 
 
