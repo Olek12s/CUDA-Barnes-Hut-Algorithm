@@ -16,7 +16,7 @@ void ParticleGenerator::addParticle(std::vector<Particle>& particles, float x, f
     particles.push_back(particle);
 }
 
-void ParticleGenerator::createFlatRectangle(std::vector<Particle> &particles, float x, float y, float z, int count, float particleMass, float vx, float vy, float vz) {
+void ParticleGenerator::createFlatRectangle(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float vx, float vy, float vz) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> dist(-SPREAD_RADIUS, SPREAD_RADIUS);
@@ -26,7 +26,7 @@ void ParticleGenerator::createFlatRectangle(std::vector<Particle> &particles, fl
     }
 }
 
-void ParticleGenerator::createCube(std::vector<Particle> &particles, float x, float y, float z, int count, float particleMass, float vx, float vy, float vz) {
+void ParticleGenerator::createCube(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float vx, float vy, float vz) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> dist(-SPREAD_RADIUS, SPREAD_RADIUS);
