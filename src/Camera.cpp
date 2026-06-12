@@ -4,9 +4,6 @@
 
 #include "Camera.h"
 
-
-
-
 Camera::Camera() {
     position = glm::vec3(0,0,3);
     viewDirection = glm::vec3(0,0,-1);
@@ -15,8 +12,8 @@ Camera::Camera() {
     pitch = 0.f;
     yaw = -90.0f;
 
-    lastX = 400;
-    lastY = 300;
+    lastX = 0;
+    lastY = 0;
     mouseMoved = true;
     speed = 1000.f;
 }
@@ -44,13 +41,7 @@ glm::vec3 Camera::getUpDirection() {
     return glm::vec3(glm::cross(viewDirection, getRightDirection()));
 }
 
-glm::vec3 Camera::getVelocityVector() {
-    return currentVelocity;
-}
-
-
 void Camera::update(GLFWwindow *window, float deltaTime) {
-    // ##### Handle inputs #####
     keyboardInput(window, deltaTime);
 }
 
@@ -61,7 +52,6 @@ void Camera::keyboardInput(GLFWwindow *window, float deltaTime) {
     glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0,1,0)));
     glm::vec3 up = glm::vec3(0,1,0);
 
-    float vel = speed * deltaTime;
     glm::vec3 moveDirection(0.0f);
 
     if (glfwGetKey(window, GLFW_KEY_W) == pressed || glfwGetKey(window, GLFW_KEY_UP) == pressed) {
@@ -91,17 +81,17 @@ void Camera::keyboardInput(GLFWwindow *window, float deltaTime) {
         currentVelocity = glm::vec3(0.0f);
     }
 
-    bool currentAddPressed = (glfwGetKey(window, GLFW_KEY_KP_ADD) == pressed || glfwGetKey(window, GLFW_KEY_EQUAL) == pressed);
-    if (currentAddPressed && !lastAddPressed) {
+    bool addPressed = (glfwGetKey(window, GLFW_KEY_KP_ADD) == pressed || glfwGetKey(window, GLFW_KEY_EQUAL) == pressed);
+    if (addPressed && !lastAddPressed) {
         speed *= 2.0f;
     }
-    lastAddPressed = currentAddPressed;
+    lastAddPressed = addPressed;
 
-    bool currentSubPressed = (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == pressed || glfwGetKey(window, GLFW_KEY_MINUS) == pressed);
-    if (currentSubPressed && !lastSubPressed) {
+    bool subPressed = (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == pressed || glfwGetKey(window, GLFW_KEY_MINUS) == pressed);
+    if (subPressed && !lastSubPressed) {
         speed /= 2.0f;
     }
-    lastSubPressed = currentSubPressed;
+    lastSubPressed = subPressed;
 }
 
 void Camera::mouseInput(float x, float y) {
@@ -115,7 +105,6 @@ void Camera::mouseInput(float x, float y) {
     // offset between last frame vs current frame of how many pixels mouse has moved
     float xoffset = x - lastX;
     float yoffset = lastY - y;
-
     lastX = x;
     lastY = y;
 
@@ -133,6 +122,7 @@ void Camera::mouseInput(float x, float y) {
     if (pitch > 89.f) pitch = 89.f;
     if (pitch < -89.f) pitch = -89.f;
 
+    // chang ecamera's look direction
     glm::vec3 dir;
     dir.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     dir.y = sin(glm::radians(pitch));

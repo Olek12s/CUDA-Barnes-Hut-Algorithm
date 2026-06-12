@@ -5,8 +5,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <iostream>
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -20,17 +18,16 @@ public:
     void mouseInput(float x, float y);
     glm::vec3 getUpDirection();
     glm::vec3 getRightDirection();
-    glm::vec3 getVelocityVector();
     glm::mat4 getViewMatrix();
     glm::mat4 getProjectionMatrix(float aspectRatio) const;
 
     float pitch;
     float yaw;
-
     float lastX;
     float lastY;
     bool mouseMoved;
-    float speed;
+    float speed;                // camera speed
+    glm::vec3 currentVelocity;  // current camera speed (if moving)
     float fov;                  // field of view
     glm::vec3 position;         // position of camera in world
     glm::vec3 viewDirection;    // direction of looking, default (1,0,0)
@@ -39,7 +36,6 @@ public:
 private:
     bool lastAddPressed = false;
     bool lastSubPressed = false;
-    glm::vec3 currentVelocity;
 };
 
 

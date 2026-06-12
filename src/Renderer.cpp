@@ -253,7 +253,7 @@ void Renderer::prepareImGuiFrame() {
     ImGui::Checkbox("Anchor", &ANCHOR);
 
     glm::vec3 FOC = camera.position + camera.viewDirection * 150.0f;      // front of camera
-    glm::vec3 CVV = camera.getVelocityVector() * (deltaTime / TIME_STEP); // camera velocity vector
+    glm::vec3 CVV = camera.currentVelocity * (deltaTime / TIME_STEP); // camera velocity vector
 
     if (ImGui::Button("Create Particle", ImVec2(-1, 0))) {
         ParticleGenerator::addParticle(*particles, FOC.x, FOC.y, FOC.z, genParticleMass, CVV.x, CVV.y, CVV.z);
