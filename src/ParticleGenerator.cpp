@@ -8,8 +8,6 @@
 
 #include "Globals.h"
 
-constexpr float SPREAD_RADIUS = 50.0f;
-
 void ParticleGenerator::addParticle(std::vector<Particle>& particles, float x, float y, float z, float mass, float vx, float vy, float vz) {
     Particle particle(x, y, z, mass, vx, vy, vz);
     if(ANCHOR) particle.setAnchored(true);

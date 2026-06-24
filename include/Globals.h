@@ -15,6 +15,7 @@ inline float THETA_SQ = THETA * THETA;
 inline float G_MULTIPLIER = 1.0f;
 inline float TIME_STEP = 1000.0f;
 inline bool ANCHOR = false;
+inline float SPREAD_RADIUS = 50.0f;
 
 inline int COM_INTERACTIONS = 0;
 inline int DIRECT_INTERACTIONS = 0;
