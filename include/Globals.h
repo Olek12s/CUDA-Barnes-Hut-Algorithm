@@ -2,7 +2,7 @@
 #define CONFIG_H
 #include <thread>
 
-inline int SPLIT_AT_LEAF_SIZE = 2048;
+inline int SPLIT_AT_LEAF_SIZE = 8;
 constexpr int MAX_MORTON_BITS = 21; // Z_CODE has 64 unsigned bit type - code is defined by 3 values, thus maximum morton bits is 64/3 = 21
 constexpr unsigned int MORTON_SCALE = (1u << MAX_MORTON_BITS) - 1u; // 2097151, or std::pow(2, 21 //Morton_SCALE is in other words the biggest digit possible to encode on 21 btis
 

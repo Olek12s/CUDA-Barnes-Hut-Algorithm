@@ -33,13 +33,13 @@ target_include_directories(Barnes-Hut-Licencjat PRIVATE
 
 target_include_directories(Barnes-Hut-Licencjat PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+#if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
-    target_compile_options(Barnes-Hut-Licencjat PRIVATE -O3 -march=native -ffast-math)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+#    target_compile_options(Barnes-Hut-Licencjat PRIVATE -O3 -march=native -ffast-math)
+#elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 
     target_compile_options(Barnes-Hut-Licencjat PRIVATE /O2 /arch:AVX2 /fp:fast)
-endif()
+#endif()
 
 target_link_libraries(Barnes-Hut-Licencjat PRIVATE
         glad

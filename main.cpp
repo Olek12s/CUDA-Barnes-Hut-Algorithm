@@ -28,69 +28,7 @@ unsigned int scale(float f, float fmin, float fmax) {
     return (unsigned int)(clamped * MORTON_SCALE);
 }
 
-
-// expand method could be replaced with naive method iterating through every of 21 bits and doing 3 operations:
-//
-//      morton |= ((x >> i) & 1ull) << (3*i);
-//      morton |= ((y >> i) & 1ull) << (3*i+1);
-//      morton |= ((z >> i) & 1ull) << (3*i+2);
-//
-//  But above method is multiple times slower than the one below.
-// example expanded value: 100100100100100 (Where 1 can be either 1 or 0 and 0 is always 0 - hold no value for 32bit value).
-uint64_t expand(unsigned int v) {
-    uint64_t x = v & 0x1fffff;
-    // 21 bits       // 0b00000000 00000000 00000000 00000000 00000000 00011111 11111111 11111111
-
-    // initial v example value: abcd
-
-    // spacing: 32
-    x = (x | x << 32) & 0x1f00000000ffff;       // 0b00000000 00011111 00000000 00000000 00000000 00000000 11111111 11111111
-
-    // spacing: 16
-    x = (x | x << 16) & 0x1f0000ff0000ff;       // 0b00000000 00011111 00000000 00000000 11111111 00000000 00000000 11111111
-
-    // spacing: 8
-    x = (x | x << 8)  & 0x100f00f00f00f00f;     // 0b00010000 00001111 00000000 11110000 00001111 00000000 11110000 00001111
-
-    // a0b0c0d0         spacing: 2
-    x = (x | x << 4)  & 0x10c30c30c30c30c3;     // 0b00010000 11000011 00001100 00110000 11000011 00001100 00110000 11000011
-
-    // a00b00c00d00     spacing: 3
-    x = (x | x << 2)  & 0x1249249249249249;     // 0b00010010 01001001 00100100 10010010 01001001 00100100 10010010 01001001
-
-    return x;
-}
-
-
-//x = x2 x1 x0
-//y = y2 y1 y0
-//z = z2 z1 z0
-//res: z2 y2 x2 z1 y1 x1 z0 y0 x0
 uint64_t getMortonCodeFrom3D(float x, float y, float z, const std::array<std::pair<float,float>,3>& bounds) {
-    uint32_t xs = scale(x, bounds[0].first, bounds[0].second);
-    uint32_t ys = scale(y, bounds[1].first, bounds[1].second);
-    uint32_t zs = scale(z, bounds[2].first, bounds[2].second);
-
-    uint64_t xx = expand(xs);
-    uint64_t yy = expand(ys);
-    uint64_t zz = expand(zs);
-
-    // interlace (x,y,z) bits in pattern: [...]x₁y₁z₁x₀y₀z₀. This value determines tree's octant. Octant = (z,y,x)
-
-    // Division values for 8 octants at the same level:
-    // 000 - back-bottom-left
-    // 001 - back-bottom-right
-    // 010 - back-top-left
-    // 011 - back-top-right
-    // 100 - front-bottom-left
-    // 101 - front-bottom-right
-    // 110 - front-top-left
-    // 111 - front-top-right
-
-    return xx | (yy << 1) | (zz << 2);
-}
-
-uint64_t getMortonCodeFrom3DNaive(float x, float y, float z, const std::array<std::pair<float,float>,3>& bounds) {
     // scale
     uint64_t xs = scale(x, bounds[0].first, bounds[0].second);
     uint64_t ys = scale(y, bounds[1].first, bounds[1].second);
@@ -118,7 +56,6 @@ void computeMortonCodes(std::vector<Particle>& particles,const std::array<std::p
     for(auto& p : particles)
     {
         p.Z_CODE = getMortonCodeFrom3D(p.x, p.y, p.z, bounds);
-        //p.Z_CODE = getMortonCodeFrom3DNaive(p.x, p.y, p.z, bounds);
     }
 }
 
@@ -201,7 +138,8 @@ int main() {
     Renderer renderer(particles, octtree);
     renderer.init();
 
-    std::array<double, 11> timings = {0.0};
+    // Tablica do akumulacji czasu z calego ticku (1 sekundy)
+    std::array<double, 11> accumulatedTimings = {0.0};
     auto tpsTimer = std::chrono::steady_clock::now();
     int frameCount = 0;
 
@@ -212,53 +150,53 @@ int main() {
         renderer.prepareImGuiFrame();   // prepare imgui window
         renderer.renderFrame();         // render particles
         frameCount++;
-        timings[0] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[0] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2. integrate w/ leapfrog (velocity step 1/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogVelStep(TIME_STEP * 0.5f);
         }
-        timings[1] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[1] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2.5 integrate w/ leapfrog (position step)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogPosStep(TIME_STEP);
         }
-        timings[2] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[2] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 3. bounds
         t0 = std::chrono::high_resolution_clock::now();
         auto bounds = findMinMax(particles);
-        timings[3] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[3] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 4. recompute morton codes
         t0 = std::chrono::high_resolution_clock::now();
         computeMortonCodes(particles, bounds);
-        timings[4] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[4] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 5. sort by morton
         t0 = std::chrono::high_resolution_clock::now();
         std::sort(particles.begin(), particles.end(), comp);
-        timings[5] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[5] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 6. rebuild tree
         t0 = std::chrono::high_resolution_clock::now();
         octtree.buildTree(particles);
-        timings[6] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[6] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 7. mass distribution
         t0 = std::chrono::high_resolution_clock::now();
         octtree.computeMassDistribution(particles);
-        timings[7] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[7] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 8. reset accelerations
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.ax = p.ay = p.az = 0;
         }
-        timings[8] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[8] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 9. compute forces (multithread)
         t0 = std::chrono::high_resolution_clock::now();
@@ -280,39 +218,40 @@ int main() {
         {
             size_t start = t * chunk;
             size_t end = std::min(start + chunk, n);
-
-            threads.emplace_back(worker, start, end);   // start
+            threads.emplace_back(worker, start, end);
         }
 
-        for (auto &th : threads)
+        for (auto& th : threads)
         {
             th.join();  // sync barrier
         }
-
-        timings[9] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[9] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 10. integrate w/ leapfrog (velocity step 2/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogVelStep(TIME_STEP * 0.5f);
-            //p.leapFrogPosStep(TIME_STEP);  posstep should appear twice
         }
-        timings[10] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[10] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
+        // --- TICK LOGIC (ONCE PER SECOND) ---
         auto now = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - tpsTimer).count();
 
-        if (elapsed >= 1000)    // once per second
+        if (elapsed >= 1000 && frameCount > 0)
         {
             double fps = frameCount * 1000.0 / elapsed;
             std::cout << "\nCAM pos: [" << renderer.camera.position.x << ", " << renderer.camera.position.y << ", " << renderer.camera.position.z << "]\n";
             std::cout << "FPS: " << fps << '\n';
             std::cout << "Nodes: " << octtree.nodeCount << "\n";
 
-            tpsTimer = now;
-            double totalTime = 0.0;
-            for (double t : timings) {
-                totalTime += t;
+            double totalAvgTime = 0.0;
+            std::array<double, 11> avgTimings = {0.0};
+
+            // Calculate averages
+            for (int i = 1; i < 11; ++i) {  // i = 1 to ignore timing for render
+                avgTimings[i] = accumulatedTimings[i] / frameCount;
+                totalAvgTime += avgTimings[i];
             }
 
             const char* names[11] =
@@ -330,22 +269,26 @@ int main() {
                 "11. leapfrog vel step 2/2"
             };
 
-            std::cout << "\n===== PROFILING FOR " << particles.size() << " BODIES (LAST FRAME) =====\n";
+            std::cout << "\n===== PROFILING FOR " << particles.size() << " BODIES (AVERAGE PER FRAME) =====\n";
 
             for (int i = 0; i < 11; ++i)
             {
-                double percent = (timings[i] / totalTime) * 100.0;
+                double percent = (avgTimings[i] / totalAvgTime) * 100.0;
 
                 std::cout
                     << names[i]
                     << ": "
-                    << timings[i]
+                    << avgTimings[i]
                     << " ms ("
                     << percent
                     << "%)\n";
             }
-            std::cout << "TOTAL frame: " << totalTime << " ms\n";
+            std::cout << "TOTAL AVERAGE frame time: " << totalAvgTime << " ms\n";
+
+            // Reset state for the next second
+            tpsTimer = now;
             frameCount = 0;
+            accumulatedTimings.fill(0.0);
         }
     }
     return 0;

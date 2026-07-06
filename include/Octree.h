@@ -30,7 +30,6 @@ struct Node {
 
 class Octree {
     std::vector<Node> nodes;    // whole tree structure sits here with all the informations
-    int rootNode = 0;           // root node has always index 0
 
 public:
     int nodeCount = 0;
