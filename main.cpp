@@ -28,69 +28,7 @@ unsigned int scale(float f, float fmin, float fmax) {
     return (unsigned int)(clamped * MORTON_SCALE);
 }
 
-
-// expand method could be replaced with naive method iterating through every of 21 bits and doing 3 operations:
-//
-//      morton |= ((x >> i) & 1ull) << (3*i);
-//      morton |= ((y >> i) & 1ull) << (3*i+1);
-//      morton |= ((z >> i) & 1ull) << (3*i+2);
-//
-//  But above method is multiple times slower than the one below.
-// example expanded value: 100100100100100 (Where 1 can be either 1 or 0 and 0 is always 0 - hold no value for 32bit value).
-uint64_t expand(unsigned int v) {
-    uint64_t x = v & 0x1fffff;
-    // 21 bits       // 0b00000000 00000000 00000000 00000000 00000000 00011111 11111111 11111111
-
-    // initial v example value: abcd
-
-    // spacing: 32
-    x = (x | x << 32) & 0x1f00000000ffff;       // 0b00000000 00011111 00000000 00000000 00000000 00000000 11111111 11111111
-
-    // spacing: 16
-    x = (x | x << 16) & 0x1f0000ff0000ff;       // 0b00000000 00011111 00000000 00000000 11111111 00000000 00000000 11111111
-
-    // spacing: 8
-    x = (x | x << 8)  & 0x100f00f00f00f00f;     // 0b00010000 00001111 00000000 11110000 00001111 00000000 11110000 00001111
-
-    // a0b0c0d0         spacing: 2
-    x = (x | x << 4)  & 0x10c30c30c30c30c3;     // 0b00010000 11000011 00001100 00110000 11000011 00001100 00110000 11000011
-
-    // a00b00c00d00     spacing: 3
-    x = (x | x << 2)  & 0x1249249249249249;     // 0b00010010 01001001 00100100 10010010 01001001 00100100 10010010 01001001
-
-    return x;
-}
-
-
-//x = x2 x1 x0
-//y = y2 y1 y0
-//z = z2 z1 z0
-//res: z2 y2 x2 z1 y1 x1 z0 y0 x0
 uint64_t getMortonCodeFrom3D(float x, float y, float z, const std::array<std::pair<float,float>,3>& bounds) {
-    uint32_t xs = scale(x, bounds[0].first, bounds[0].second);
-    uint32_t ys = scale(y, bounds[1].first, bounds[1].second);
-    uint32_t zs = scale(z, bounds[2].first, bounds[2].second);
-
-    uint64_t xx = expand(xs);
-    uint64_t yy = expand(ys);
-    uint64_t zz = expand(zs);
-
-    // interlace (x,y,z) bits in pattern: [...]x₁y₁z₁x₀y₀z₀. This value determines tree's octant. Octant = (z,y,x)
-
-    // Division values for 8 octants at the same level:
-    // 000 - back-bottom-left
-    // 001 - back-bottom-right
-    // 010 - back-top-left
-    // 011 - back-top-right
-    // 100 - front-bottom-left
-    // 101 - front-bottom-right
-    // 110 - front-top-left
-    // 111 - front-top-right
-
-    return xx | (yy << 1) | (zz << 2);
-}
-
-uint64_t getMortonCodeFrom3DNaive(float x, float y, float z, const std::array<std::pair<float,float>,3>& bounds) {
     // scale
     uint64_t xs = scale(x, bounds[0].first, bounds[0].second);
     uint64_t ys = scale(y, bounds[1].first, bounds[1].second);
@@ -118,7 +56,6 @@ void computeMortonCodes(std::vector<Particle>& particles,const std::array<std::p
     for(auto& p : particles)
     {
         p.Z_CODE = getMortonCodeFrom3D(p.x, p.y, p.z, bounds);
-        //p.Z_CODE = getMortonCodeFrom3DNaive(p.x, p.y, p.z, bounds);
     }
 }
 
