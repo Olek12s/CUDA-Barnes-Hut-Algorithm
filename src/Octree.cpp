@@ -198,38 +198,49 @@ void Octree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, c
     float dy = node.mcy - particle.y;
     float dz = node.mcz - particle.z;
 
-    // ignore A <-> A and leaf nodes
-    if (node.isLeaf() && node.end - node.start == 1 && &particles[node.start] == &particle)
-    {
-        return;
-    }
-
     float distSq = dx*dx + dy*dy + dz*dz + EPSILON_SQ;
     float sizeSq = node.size * node.size;
 
-    if (node.isLeaf() || (sizeSq < distSq * THETA_SQ)) {
+    if (sizeSq < distSq * THETA_SQ) {
         float invDist = 1.0f / sqrtf(distSq);
         float invDist3 = invDist * invDist * invDist;
         float factor = G * G_MULTIPLIER * node.mass * invDist3; // check the node's COM
 
-        if (countInteractions) {
-            if (node.end - node.start > 1) {
-                COM_INTERACTIONS++;
-            } else {
-                DIRECT_INTERACTIONS++;
-            }
-        }
-
         particle.ax += dx * factor;
         particle.ay += dy * factor;
         particle.az += dz * factor;
+
+        if (countInteractions) COM_INTERACTIONS++;
     }
     else {  // traverse children TOP-BOTTOM
-        if (node.firstChild == -1) return;
+        if (node.isLeaf()) {
+            for (int p = node.start; p < node.end; p++) {
+                if (p == -1) continue;
+                const Particle& target = particles[p];
 
-        for (int i = 0; i < node.numChildren; i++)
-        {
-            computeForcesAffectingParticle(node.firstChild + i, particle, particles);
+                // ignore A <-> A
+                if (&target == &particle) continue;
+
+                float pdx = target.x - particle.x;
+                float pdy = target.y - particle.y;
+                float pdz = target.z - particle.z;
+
+                float pDistSq = pdx*pdx + pdy*pdy + pdz*pdz + EPSILON_SQ;
+                float pInvDist = 1.0f / sqrtf(pDistSq);
+                float pInvDist3 = pInvDist * pInvDist * pInvDist;
+                float pFactor = G * G_MULTIPLIER * target.mass * pInvDist3;
+
+                particle.ax += pdx * pFactor;
+                particle.ay += pdy * pFactor;
+                particle.az += pdz * pFactor;
+
+                if (countInteractions) DIRECT_INTERACTIONS++;
+            }
+        }
+        else {
+            for (int i = 0; i < node.numChildren; i++) {
+                computeForcesAffectingParticle(node.firstChild + i, particle, particles);
+            }
         }
     }
 }

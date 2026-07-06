@@ -201,7 +201,8 @@ int main() {
     Renderer renderer(particles, octtree);
     renderer.init();
 
-    std::array<double, 11> timings = {0.0};
+    // Tablica do akumulacji czasu z calego ticku (1 sekundy)
+    std::array<double, 11> accumulatedTimings = {0.0};
     auto tpsTimer = std::chrono::steady_clock::now();
     int frameCount = 0;
 
@@ -212,53 +213,53 @@ int main() {
         renderer.prepareImGuiFrame();   // prepare imgui window
         renderer.renderFrame();         // render particles
         frameCount++;
-        timings[0] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[0] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2. integrate w/ leapfrog (velocity step 1/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogVelStep(TIME_STEP * 0.5f);
         }
-        timings[1] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[1] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2.5 integrate w/ leapfrog (position step)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogPosStep(TIME_STEP);
         }
-        timings[2] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[2] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 3. bounds
         t0 = std::chrono::high_resolution_clock::now();
         auto bounds = findMinMax(particles);
-        timings[3] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[3] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 4. recompute morton codes
         t0 = std::chrono::high_resolution_clock::now();
         computeMortonCodes(particles, bounds);
-        timings[4] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[4] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 5. sort by morton
         t0 = std::chrono::high_resolution_clock::now();
         std::sort(particles.begin(), particles.end(), comp);
-        timings[5] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[5] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 6. rebuild tree
         t0 = std::chrono::high_resolution_clock::now();
         octtree.buildTree(particles);
-        timings[6] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[6] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 7. mass distribution
         t0 = std::chrono::high_resolution_clock::now();
         octtree.computeMassDistribution(particles);
-        timings[7] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[7] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 8. reset accelerations
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.ax = p.ay = p.az = 0;
         }
-        timings[8] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[8] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 9. compute forces (multithread)
         t0 = std::chrono::high_resolution_clock::now();
@@ -280,39 +281,40 @@ int main() {
         {
             size_t start = t * chunk;
             size_t end = std::min(start + chunk, n);
-
-            threads.emplace_back(worker, start, end);   // start
+            threads.emplace_back(worker, start, end);
         }
 
-        for (auto &th : threads)
+        for (auto& th : threads)
         {
             th.join();  // sync barrier
         }
-
-        timings[9] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[9] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 10. integrate w/ leapfrog (velocity step 2/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogVelStep(TIME_STEP * 0.5f);
-            //p.leapFrogPosStep(TIME_STEP);  posstep should appear twice
         }
-        timings[10] = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+        accumulatedTimings[10] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
+        // --- TICK LOGIC (ONCE PER SECOND) ---
         auto now = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - tpsTimer).count();
 
-        if (elapsed >= 1000)    // once per second
+        if (elapsed >= 1000 && frameCount > 0)
         {
             double fps = frameCount * 1000.0 / elapsed;
             std::cout << "\nCAM pos: [" << renderer.camera.position.x << ", " << renderer.camera.position.y << ", " << renderer.camera.position.z << "]\n";
             std::cout << "FPS: " << fps << '\n';
             std::cout << "Nodes: " << octtree.nodeCount << "\n";
 
-            tpsTimer = now;
-            double totalTime = 0.0;
-            for (double t : timings) {
-                totalTime += t;
+            double totalAvgTime = 0.0;
+            std::array<double, 11> avgTimings = {0.0};
+
+            // Calculate averages
+            for (int i = 1; i < 11; ++i) {  // i = 1 to ignore timing for render
+                avgTimings[i] = accumulatedTimings[i] / frameCount;
+                totalAvgTime += avgTimings[i];
             }
 
             const char* names[11] =
@@ -330,22 +332,26 @@ int main() {
                 "11. leapfrog vel step 2/2"
             };
 
-            std::cout << "\n===== PROFILING FOR " << particles.size() << " BODIES (LAST FRAME) =====\n";
+            std::cout << "\n===== PROFILING FOR " << particles.size() << " BODIES (AVERAGE PER FRAME) =====\n";
 
             for (int i = 0; i < 11; ++i)
             {
-                double percent = (timings[i] / totalTime) * 100.0;
+                double percent = (avgTimings[i] / totalAvgTime) * 100.0;
 
                 std::cout
                     << names[i]
                     << ": "
-                    << timings[i]
+                    << avgTimings[i]
                     << " ms ("
                     << percent
                     << "%)\n";
             }
-            std::cout << "TOTAL frame: " << totalTime << " ms\n";
+            std::cout << "TOTAL AVERAGE frame time: " << totalAvgTime << " ms\n";
+
+            // Reset state for the next second
+            tpsTimer = now;
             frameCount = 0;
+            accumulatedTimings.fill(0.0);
         }
     }
     return 0;

@@ -80,7 +80,7 @@ void Renderer::init() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
 
-    glPointSize(4.0f);
+    glPointSize(5.0f);
 
     // IMGUI INIT
     IMGUI_CHECKVERSION();
@@ -164,8 +164,8 @@ void Renderer::renderFrame() {
     glm::mat4 projectionMatrix = camera.getProjectionMatrix(800.0f / 600.0f);
 
     unsigned int model = glGetUniformLocation(shader.ID, "model");
-    unsigned int view = glGetUniformLocation(shader.ID, "view");
-    unsigned int projection = glGetUniformLocation(shader.ID, "projection");
+    int view = glGetUniformLocation(shader.ID, "view");
+    int projection = glGetUniformLocation(shader.ID, "projection");
 
     // Sending to the shader's uniforms model, view and projection matrices
     glUniformMatrix4fv(model,1,GL_FALSE, glm::value_ptr(modelMatrix));
@@ -188,17 +188,16 @@ void Renderer::renderFrame() {
     glfwSwapBuffers(window);
     glfwPollEvents();
 }
-
 void Renderer::prepareImGuiFrame() {
     ImGuiIO& io = ImGui::GetIO();
 
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 10.0f, 10.0f), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
-    ImGui::Begin("Config", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
+    ImGui::Begin("Konfiguracja symulacji", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
 
     // ##### CONFIG #####
 
-    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Config variables:");
-    ImGui::InputFloat("G Multiplier", &G_MULTIPLIER, 1.0f, 10.0f, "%.1f");
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Zmienne konfiguracyjne:");
+    ImGui::InputFloat("Mnoznik G", &G_MULTIPLIER, 1.0f, 10.0f, "%.1f");
 
     // split at, only powers of 2 allowed
     int power = 0;
@@ -207,67 +206,65 @@ void Renderer::prepareImGuiFrame() {
     }
     char format_buf[32];
     snprintf(format_buf, sizeof(format_buf), "%d", 1 << power);
-    if (ImGui::SliderInt("Split at", &power, 0, 13, format_buf)) {
+    if (ImGui::SliderInt("Podzial drezwa przy", &power, 0, 13, format_buf)) {
         SPLIT_AT_LEAF_SIZE = (int)std::pow(2, power);
     }
 
     if (ImGui::SliderFloat("Theta", &THETA, 0.0f, 5.0f)) THETA_SQ = THETA * THETA;
     if (ImGui::SliderFloat("Epsilon", &EPSILON, 0.01f, 5.0f)) EPSILON_SQ = EPSILON * EPSILON;
-    ImGui::InputFloat("Timestep", &TIME_STEP, 10.0f, 1000.0f, "%.1f");
-    ImGui::SliderInt("Threads", &NUM_THREADS, 1, MAX_HARDWARE_THREADS);
+    ImGui::InputFloat("Krok czasowy", &TIME_STEP, 10.0f, 1000.0f, "%.1f");
+    ImGui::SliderInt("Watki", &NUM_THREADS, 1, MAX_HARDWARE_THREADS);
+    ImGui::Separator();
 
     // ##### CONFIG #####
-
-    ImGui::Separator();
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Dane profilowe:");
     ImGui::Text("TPS: %.1f", ImGui::GetIO().Framerate);
-    ImGui::Text("Current Bodies: %zu", particles->size());
-    ImGui::Text("Nodes: %d", octree->nodeCount);
-    ImGui::Text("COM interactions: %d", COM_INTERACTIONS);
-    ImGui::Text("Direct interactions: %d", DIRECT_INTERACTIONS);
-    ImGui::Checkbox("Count Interactions", &countInteractions);
-    if (ImGui::Button("Remove Bodies", ImVec2(-1, 0))) particles->clear();
+    ImGui::Text("Liczba cial: %zu", particles->size());
+    ImGui::Text("Wierzcholki: %d", octree->nodeCount);
+    ImGui::Text("Interakcje COM: %d", COM_INTERACTIONS);
+    ImGui::Text("Bezposrednie interakcje: %d", DIRECT_INTERACTIONS);
+    ImGui::Checkbox("Licz interakcje", &countInteractions);
     ImGui::Separator();
 
     // ##### PARTICLE GENERATOR #####
-    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Particle Generator:");
-
-    ImGui::InputFloat("Min Radius", &minRadius, 100.0f, 1000.0f, "%.1f");
-    ImGui::InputFloat("Max Radius", &maxRadius, 100.0f, 1000.0f, "%.1f");
-    ImGui::InputFloat("Particle Mass", &genParticleMass, 100.0f, 1000.0f, "%.1f");
-    ImGui::InputFloat("Center Mass", &genCenterMass, 1000.0f, 10000.0f, "%.1f");
-    ImGui::InputInt("Count", &genCount, 1000, 10000);
-    ImGui::Checkbox("Anchor", &ANCHOR);
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Generator czastek:");
+    if (ImGui::Button("Usun ciala", ImVec2(-1, 0))) particles->clear();
+    ImGui::InputFloat("Min. promien", &minRadius, 100.0f, 1000.0f, "%.1f");
+    ImGui::InputFloat("Maks. promien", &maxRadius, 100.0f, 1000.0f, "%.1f");
+    ImGui::InputFloat("Masa czastki", &genParticleMass, 100.0f, 1000.0f, "%.1f");
+    ImGui::InputFloat("Masa centralna", &genCenterMass, 1000.0f, 10000.0f, "%.1f");
+    ImGui::InputInt("Liczba czastek", &genCount, 1000, 10000);
+    ImGui::Checkbox("Zakotwicz", &ANCHOR);
 
     glm::vec3 FOC = camera.position + camera.viewDirection * 150.0f;                                  // front of camera
     glm::vec3 CVV = camera.currentVelocity * (deltaTime / std::max(0.0001f, TIME_STEP));     // camera velocity vector
 
-    if (ImGui::Button("Create Particle", ImVec2(-1, 0))) {
+    if (ImGui::Button("Stworz czastke", ImVec2(-1, 0))) {
         ParticleGenerator::addParticle(*particles, FOC.x, FOC.y, FOC.z, genParticleMass, CVV.x, CVV.y, CVV.z);
     }
-    if (ImGui::Button("Create Rectangle", ImVec2(-1, 0))) {
+    if (ImGui::Button("Stworz prostokat", ImVec2(-1, 0))) {
         ParticleGenerator::createFlatRectangle(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, CVV.x, CVV.y, CVV.z);
     }
-    if (ImGui::Button("Create Cube", ImVec2(-1, 0))) {
+    if (ImGui::Button("Stworz szescian", ImVec2(-1, 0))) {
         ParticleGenerator::createCube(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, CVV.x, CVV.y, CVV.z);
     }
-    if (ImGui::Button("Create Disc", ImVec2(-1, 0))) {
+    if (ImGui::Button("Stworz dysk", ImVec2(-1, 0))) {
         ParticleGenerator::createDisc(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, minRadius, maxRadius, CVV.x, CVV.y, CVV.z);
     }
-    if (ImGui::Button("Create Sphere", ImVec2(-1, 0))) {
+    if (ImGui::Button("Stworz kule", ImVec2(-1, 0))) {
         ParticleGenerator::createSphere(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, minRadius, maxRadius, CVV.x, CVV.y, CVV.z);
     }
+    ImGui::Separator();
     // ##### PARTICLE GENERATOR #####
 
 
     // ##### CAMERA #####
-    ImGui::Separator();
-
-    if (ImGui::Button("Reset position", ImVec2(-1, 0))) camera.position = glm::vec3(0,0,0);
-    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Camera:");
-    ImGui::Text("Speed: %.1f", camera.speed);
-    ImGui::Text("Pitch: %.1f", camera.pitch);
-    ImGui::Text("Yaw: %.1f", camera.yaw);
-    ImGui::Text("Cam Pos: %.2f, %.2f, %.2f", camera.position.x, camera.position.y, camera.position.z);
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Kamera:");
+    ImGui::Text("Predkosc: %.1f", camera.speed);
+    ImGui::Text("Pochylenie: %.1f", camera.pitch);
+    ImGui::Text("Odchylenie: %.1f", camera.yaw);
+    ImGui::Text("Pozycja: %.2f, %.2f, %.2f", camera.position.x, camera.position.y, camera.position.z);
+    if (ImGui::Button("Zresetuj pozycje", ImVec2(-1, 0))) camera.position = glm::vec3(0,0,0);
     // ##### CAMERA #####
 
     ImGui::End();

@@ -15,6 +15,10 @@ struct Particle {
     uint64_t Z_CODE : 63;       // morton code
     uint64_t anchored : 1;      // anchor - takes Most Significant Bit
 
+    Particle(float x, float y, float z, float m, float vx, float vy, float vz):
+    x(x),y(y),z(z), vx(vx), vy(vy), vz(vz), ax(0), ay(0), az(0), mass(m), Z_CODE(0), anchored(false) {}
+
+
     void setAnchored(bool anchor) {
         anchored = anchor;
     }
@@ -23,39 +27,12 @@ struct Particle {
         return anchored;
     }
 
-    // Particle() {};
-    // Particle(float x, float y, float z): x(x),y(y),z(z) {}
-
-
-    Particle(float x, float y, float z): x(x),y(y),z(z),  vx(0), vy(0), vz(0),ax(0), ay(0), az(0),mass(1.0f), Z_CODE(0), anchored(false) {}
-    Particle(float x, float y, float z, float m): x(x),y(y),z(z),  vx(0), vy(0), vz(0),ax(0), ay(0), az(0),mass(m), Z_CODE(0), anchored(false) {}
-    Particle(float x, float y, float z, float m, float vx, float vy, float vz): x(x),y(y),z(z),  vx(vx), vy(vy), vz(vz),ax(0), ay(0), az(0),mass(m), Z_CODE(0), anchored(false) {}
-
-    void euler(float timeStep) {
-        if (isAnchored()) return;
-
-        vx += ax * timeStep;
-        vy += ay * timeStep;
-        vz += az * timeStep;
-
-        x += vx * timeStep;
-        y += vy * timeStep;
-        z += vz * timeStep;
-    }
-
     void leapFrogVelStep(float halfTimeStep) {
         if (isAnchored()) return;
 
         vx += ax * halfTimeStep;
         vy += ay * halfTimeStep;
         vz += az * halfTimeStep;
-
-        // if (vx > max) vx = max;
-        // if (vy > max) vy = max;
-        // if (vz > max) vz = max;
-
-        //printf("%.15f\n", az);
-        //std::cout << "Acc: " << ax << "\n";
     }
 
     void leapFrogPosStep(float timeStep) {
