@@ -30,7 +30,7 @@ glm::mat4 Camera::getViewMatrix()
 glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 {
     //return glm::perspective(glm::radians(fov), aspectRatio, 0.01f, 10000000.0f);
-    return glm::infinitePerspective(glm::radians(fov), aspectRatio, 0.01f); // infinity reach
+    return glm::infinitePerspective(glm::radians(fov), aspectRatio, 0.01f);
 }
 
 glm::vec3 Camera::getRightDirection() {
@@ -73,10 +73,9 @@ void Camera::keyboardInput(GLFWwindow *window, float deltaTime) {
         moveDirection += up;
     }
 
-    // normalize direction vec, multiply by speed and deltaTime
     if (glm::length(moveDirection) > 0.0f) {
         currentVelocity = glm::normalize(moveDirection) * speed;
-        position += currentVelocity * deltaTime;    // update position
+        position += currentVelocity * deltaTime;
     } else {
         currentVelocity = glm::vec3(0.0f);
     }
@@ -102,27 +101,22 @@ void Camera::mouseInput(float x, float y) {
         mouseMoved = false;
     }
 
-    // offset between last frame vs current frame of how many pixels mouse has moved
     float xoffset = x - lastX;
     float yoffset = lastY - y;
     lastX = x;
     lastY = y;
 
-    // sensitivity
     xoffset *= 0.1f;
     yoffset *= 0.1f;
 
-    // update camera's pitch & yaw variables after mouse movement
     pitch += yoffset;
     yaw += xoffset;
 
-    // lock the camera's angles (at 90 degrees there's  LookAt camera flip)
     if (yaw > 360.0f) yaw -= 360.0f;
     if (yaw < -360.0f) yaw += 360.0f;
     if (pitch > 89.f) pitch = 89.f;
     if (pitch < -89.f) pitch = -89.f;
 
-    // chang ecamera's look direction
     glm::vec3 dir;
     dir.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     dir.y = sin(glm::radians(pitch));

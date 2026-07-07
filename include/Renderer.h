@@ -27,8 +27,8 @@ class Renderer {
     float lastFrame = 0.0f;
     int lastParticleCount = 0;
 
-    static void framebuffer_size_callback(GLFWwindow* window, int width, int height);  // callback each time a window is resized
-    static void mouse_callback(GLFWwindow* window, double x, double y);                  // callback each time a mouse is moved
+    static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+    static void mouse_callback(GLFWwindow* window, double x, double y);
     void processInput(GLFWwindow* window);
 public:
     Renderer(std::vector<Particle> &particles, Octree &octtree): particles(&particles), octree(&octtree)  {}

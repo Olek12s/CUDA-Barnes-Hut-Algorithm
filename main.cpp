@@ -15,14 +15,10 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
-// scale float value to new value between [0, 21bits]
 unsigned int scale(float f, float fmin, float fmax) {
 
-    float clamped = (f - fmin) / (fmax - fmin); // clamp to the [0...1] value.      // fmax - fmin - whole width of the world. f - fmin - how for particle is from the left wall of the world
+    float clamped = (f - fmin) / (fmax - fmin);
 
-    // if particle is at 0 - It's on the left wall
-    // if particle is at 1 - It's on the right wall
-    // if particle is at ~0.5 - It's at the middle
     if(clamped < 0.f) clamped = 0.f;
     if(clamped > 1.f) clamped = 1.f;
     return (unsigned int)(clamped * MORTON_SCALE);
@@ -36,15 +32,9 @@ uint64_t getMortonCodeFrom3D(float x, float y, float z, const std::array<std::pa
 
     uint64_t morton = 0;
 
-    // naive loop through all 21 bits
     for (int i = 0; i < 21; i++) {
-        // X bit goes to 3*i in morton code
         morton |= ((xs >> i) & 1ull) << (3 * i);
-
-        // Y bit goes to 3*i + 1 in morton code
         morton |= ((ys >> i) & 1ull) << (3 * i + 1);
-
-        // Z bit goes to 3*i + 2 in morton code
         morton |= ((zs >> i) & 1ull) << (3 * i + 2);
     }
 
@@ -64,8 +54,6 @@ bool comp(const Particle& a, const Particle& b)
     return a.Z_CODE < b.Z_CODE;
 }
 
-
-// find boundary float values of particles vector
 std::array<std::pair<float,float>, 3> findMinMax(std::vector<Particle>& particles) {
     std::array<std::pair<float, float>, 3> bounds =
     {{
@@ -97,48 +85,11 @@ std::array<std::pair<float,float>, 3> findMinMax(std::vector<Particle>& particle
 }
 
 int main() {
-    // Packets for tree are distributed as:
-
-    // Bounding box: [-1000, 1000] along each axis
-    // Level 1 (root octant, first Morton code “package”):
-    //   - [-1000, 0)   // negative half
-    //   - [0, 1000]    // positive half
-
-    // Level 2 (second Morton code package, divide each half of level 1 in half):
-    //   - [-1000, -500)
-    //   - [-500, 0)
-    //   - [0, 500)
-    //   - [500, 1000]
-
-    // Level 3 (third Morton code package, divide each previous quarter in half):
-    //   - [-1000, -750)
-    //   - [-750, -500)
-    //   - [-500, -250)
-    //   - [-250, 0)
-    //   - [0, 250)
-    //   - [250, 500)
-    //   - [500, 750)
-    //   - [750, 1000]
-
-    // Level 4 (fourth package, node size = 2000 / 16 = 125):
-    //   - [-1000, -875), [-875, -750), [-750, -625), ..., [875, 1000]
-
-    // Level 5 (fifth package, node size = 62.5):
-    //   - Each previous interval is halved again
-    //   - Example: [-1000, -937.5), [-937.5, -875), [-875, -812.5), ...
-
-    // ...
-
-    // Level 21 (last package, node size = 2000 / 2^21 ~ 0.00095):
-    //   - Each Morton code package corresponds to a single leaf node
-
-
     std::vector<Particle> particles;
     Octree octtree;
     Renderer renderer(particles, octtree);
     renderer.init();
 
-    // Tablica do akumulacji czasu z calego ticku (1 sekundy)
     std::array<double, 11> accumulatedTimings = {0.0};
     auto tpsTimer = std::chrono::steady_clock::now();
     int frameCount = 0;
@@ -147,8 +98,8 @@ int main() {
         // 1. render
         auto t0 = std::chrono::high_resolution_clock::now();
         renderer.initFrame();
-        renderer.prepareImGuiFrame();   // prepare imgui window
-        renderer.renderFrame();         // render particles
+        renderer.prepareImGuiFrame();
+        renderer.renderFrame();         // render
         frameCount++;
         accumulatedTimings[0] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
@@ -234,7 +185,6 @@ int main() {
         }
         accumulatedTimings[10] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // --- TICK LOGIC (ONCE PER SECOND) ---
         auto now = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - tpsTimer).count();
 
@@ -248,8 +198,7 @@ int main() {
             double totalAvgTime = 0.0;
             std::array<double, 11> avgTimings = {0.0};
 
-            // Calculate averages
-            for (int i = 1; i < 11; ++i) {  // i = 1 to ignore timing for render
+            for (int i = 1; i < 11; ++i) {
                 avgTimings[i] = accumulatedTimings[i] / frameCount;
                 totalAvgTime += avgTimings[i];
             }
@@ -285,7 +234,6 @@ int main() {
             }
             std::cout << "TOTAL AVERAGE frame time: " << totalAvgTime << " ms\n";
 
-            // Reset state for the next second
             tpsTimer = now;
             frameCount = 0;
             accumulatedTimings.fill(0.0);

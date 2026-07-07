@@ -19,39 +19,39 @@
 
 void Renderer::init() {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);  // setup major version of GLFW same as OpenGL
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // setup minor version of GLFW same as OpenGL
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // use core profile of GLFW to access a smaller subset of oGL without backwards compatibility
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(800, 600, "Barnes-Hut", nullptr, nullptr);    // initialize window object
-    glfwMakeContextCurrent(window); // switch context to the window
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);    // mouse ENABLE
+    window = glfwCreateWindow(800, 600, "Barnes-Hut", nullptr, nullptr);
+    glfwMakeContextCurrent(window);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))    // load openGL function pointers
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GL Loader-Generator (GLAD)" << std::endl;
         return;
     }
 
     //glfwSwapInterval(0);    // 0 = VSync Off
-    glViewport(0, 0, 800, 600); // set the size of the viewport area (lower-left corner, width, height)
-    // glfwSetWindowUserPointer(window, this); // set pointer of specified window
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);  // window resize callback
-    glfwSetCursorPosCallback(window, mouse_callback);                   // mouse coursor callback
-    glfwSetWindowUserPointer(window, this);                       // set pointer to the current window
+    glViewport(0, 0, 800, 600);
+    // glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetWindowUserPointer(window, this);
 
     // VAO  (Vertex Array Object)
-    glGenVertexArrays(1, &VAO); // creating 1 buffer and saving its ID to VAO
-    glBindVertexArray(VAO); // setting this VAO as the active one
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
 
-    glGenBuffers(1, &VBO);  // generate 1 Vertex Buffer Object
-    glBindBuffer(GL_ARRAY_BUFFER, VBO); // set VBO as an active buffer for further operations / function calls
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER,
         particles->size() * sizeof(Particle),
         particles->data(),
-        GL_DYNAMIC_DRAW);  // allocating memory on GPU for Particle's vertices
+        GL_DYNAMIC_DRAW);
 
-    // telling openGL how to read data from VBO (position)
+
     glVertexAttribPointer(
         0,                              // index
         3,                              // size
@@ -62,7 +62,6 @@ void Renderer::init() {
     );
     glEnableVertexAttribArray(0);
 
-    // telling openGL how to read data from VBO (velocity)
     glVertexAttribPointer(
     1,                                  // index
     3,                                  // size
@@ -73,7 +72,7 @@ void Renderer::init() {
     );
     glEnableVertexAttribArray(1);
 
-    shader = Shader("Particle.vex", "Particle.frag");  // loading shader's files and compiling both vex and frag shaders
+    shader = Shader("Particle.vex", "Particle.frag");
     shader.use();
 
     glEnable(GL_BLEND);
@@ -133,14 +132,12 @@ void Renderer::initFrame() {
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
-    processInput(window);               // keyboard input
-    camera.update(window, deltaTime);   // process camera's buttons
+    processInput(window);
+    camera.update(window, deltaTime);
 
-    // Clear off window's context
     glClearColor(0,0,0, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // new frame form IMGUI
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -151,15 +148,14 @@ void Renderer::renderFrame() {
     glBindVertexArray(VAO);
     shader.use();
 
-    // if size of particles changed - reallocate buffer
     if (particles->size() != lastParticleCount) {
         glBufferData(GL_ARRAY_BUFFER, particles->size() * sizeof(Particle), particles->data(), GL_DYNAMIC_DRAW);
         lastParticleCount = particles->size();
-    } else {    // if size is same
+    } else {
         glBufferSubData(GL_ARRAY_BUFFER, 0, particles->size() * sizeof(Particle), particles->data());
     }
 
-    glm::mat4 modelMatrix(1.0f);    // identity matrix
+    glm::mat4 modelMatrix(1.0f);
     glm::mat4 viewMatrix = camera.getViewMatrix();
     glm::mat4 projectionMatrix = camera.getProjectionMatrix(800.0f / 600.0f);
 
@@ -167,21 +163,17 @@ void Renderer::renderFrame() {
     int view = glGetUniformLocation(shader.ID, "view");
     int projection = glGetUniformLocation(shader.ID, "projection");
 
-    // Sending to the shader's uniforms model, view and projection matrices
     glUniformMatrix4fv(model,1,GL_FALSE, glm::value_ptr(modelMatrix));
     glUniformMatrix4fv(view,1,GL_FALSE,glm::value_ptr(viewMatrix));
     glUniformMatrix4fv(projection,1,GL_FALSE,glm::value_ptr(projectionMatrix));
 
-    // send to GPU updated particles data
     glBufferSubData(GL_ARRAY_BUFFER,
                      0,
                      particles->size() * sizeof(Particle),
                      particles->data());
 
-    // render sent particles
     glDrawArrays(GL_POINTS, 0, particles->size());
 
-    // render IMGUI window
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -199,7 +191,6 @@ void Renderer::prepareImGuiFrame() {
     ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "Zmienne konfiguracyjne:");
     ImGui::InputFloat("Mnoznik G", &G_MULTIPLIER, 1.0f, 10.0f, "%.1f");
 
-    // split at, only powers of 2 allowed
     int power = 0;
     while ((int)std::pow(2, power) < SPLIT_AT_LEAF_SIZE && power < 13) {
         power++;
@@ -236,8 +227,8 @@ void Renderer::prepareImGuiFrame() {
     ImGui::InputInt("Liczba czastek", &genCount, 1000, 10000);
     ImGui::Checkbox("Zakotwicz", &ANCHOR);
 
-    glm::vec3 FOC = camera.position + camera.viewDirection * 150.0f;                                  // front of camera
-    glm::vec3 CVV = camera.currentVelocity * (deltaTime / std::max(0.0001f, TIME_STEP));     // camera velocity vector
+    glm::vec3 FOC = camera.position + camera.viewDirection * 150.0f;
+    glm::vec3 CVV = camera.currentVelocity * (deltaTime / std::max(0.0001f, TIME_STEP));
 
     if (ImGui::Button("Stworz czastke", ImVec2(-1, 0))) {
         ParticleGenerator::addParticle(*particles, FOC.x, FOC.y, FOC.z, genParticleMass, CVV.x, CVV.y, CVV.z);

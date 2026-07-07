@@ -15,7 +15,7 @@
 
 class Shader {
 public:
-    uint ID;    // Shader program unique ID. ID is a handler for linked openGL Shader program ready to use.
+    uint ID;
 
 
     Shader() {}
@@ -132,7 +132,5 @@ public:
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
     }
 };
-
-
 
 #endif //SHADER_H

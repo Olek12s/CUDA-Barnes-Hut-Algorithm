@@ -33,19 +33,31 @@ target_include_directories(Barnes-Hut-Licencjat PRIVATE
 
 target_include_directories(Barnes-Hut-Licencjat PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
-#if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
-#    target_compile_options(Barnes-Hut-Licencjat PRIVATE -O3 -march=native -ffast-math)
-#elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    target_compile_options(Barnes-Hut-Licencjat PRIVATE -O3 -march=native -ffast-math)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 
     target_compile_options(Barnes-Hut-Licencjat PRIVATE /O2 /arch:AVX2 /fp:fast)
-#endif()
+endif()
 
-target_link_libraries(Barnes-Hut-Licencjat PRIVATE
-        glad
-        "${CMAKE_SOURCE_DIR}/lib/glfw3.lib"
-        opengl32
-        gdi32
-        user32
-        shell32
-)
+find_package(OpenGL REQUIRED)
+if(WIN32)
+    target_link_libraries(Barnes-Hut-Licencjat PRIVATE
+            glad
+            "${CMAKE_SOURCE_DIR}/lib/glfw3.lib"
+            opengl32
+            gdi32
+            user32
+            shell32
+    )
+elseif(UNIX)
+    set(glfw3_DIR "/usr/lib64/cmake/glfw3")
+    find_package(glfw3 CONFIG REQUIRED)
+
+    target_link_libraries(Barnes-Hut-Licencjat PRIVATE
+            glad
+            glfw
+            OpenGL::GL
+    )
+endif()

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <array>
 #include <algorithm>
+#include <cmath>
 
 #include "Globals.h"
 
@@ -50,21 +51,18 @@ float Octree::findRootSize(const std::vector<Particle>& particles) {
     float rootSize = std::max({dx, dy, dz});
 
     if (rootSize == 0.0f) {
-        rootSize = 1.0f;    // edge case where all elements have same position
+        rootSize = 1.0f;
     }
     return rootSize;
 }
 
-// result example for node [0, 16):
-// childStart = [0, 4, 4, 7, 10, 10, 12, 14]
-// childEnd   = [4, 4, 7, 10, 10, 12, 14, 16]
 void Octree::findChildRanges(const std::vector<Particle> &particles, int start, int end, int level, int *childStart, int *childEnd) {
     for (int i = 0; i < 8; i++) {
         childStart[i] = -1;
         childEnd[i] = -1;
     }
 
-    int shift = 3 * (21 - level - 1); // MAX_MORTON_BITS = 21. shift is used to check only bit at the given level
+    int shift = 3 * (21 - level - 1);
 
     for (int i = start; i < end; i++) {
         unsigned int octant = (particles[i].Z_CODE >> shift) & 7;   // 7 == 0b111
@@ -78,17 +76,17 @@ void Octree::findChildRanges(const std::vector<Particle> &particles, int start, 
 
 
 void Octree::buildTree(std::vector<Particle>& sortedParticles) {
-    nodes.clear();  // clear off nodes vector
+    nodes.clear();
     nodeCount = 0;
     COM_INTERACTIONS = 0;
     DIRECT_INTERACTIONS = 0;
-    float rootSize = findRootSize(sortedParticles);  // find rootSize
+    float rootSize = findRootSize(sortedParticles);
 
     Node root(0, sortedParticles.size(), -1, rootSize);
     nodes.push_back(root);
     nodeCount++;
 
-    std::stack<std::pair<int, int>> stack; // first - nodeIndex, second - level // stack of nodes
+    std::stack<std::pair<int, int>> stack;
     stack.push({0, 0});
 
     while (!stack.empty()) {
@@ -100,11 +98,9 @@ void Octree::buildTree(std::vector<Particle>& sortedParticles) {
         int count = nodes[nodeIndex].end - nodes[nodeIndex].start;
 
         if (count <= SPLIT_AT_LEAF_SIZE || level >= MAX_MORTON_BITS) {
-            //if (level >= MAX_MORTON_BITS) std::cout << "Level over " << MAX_MORTON_BITS << "." << " \n";
             nodes[nodeIndex].firstChild = -1;
             continue;
         }
-        //std::cout << "Exceeded MAX_LEAF_SIZE. Dividing node into 8 children \n";
 
         int childStart[8];
         int childEnd[8];
@@ -115,12 +111,11 @@ void Octree::buildTree(std::vector<Particle>& sortedParticles) {
         float childSize = nodes[nodeIndex].size * 0.5f;
         int childCount = 0;
 
-        // Nodes are not created if they would carry no particles
         for (int i = 0; i < 8; i++)
         {
-            if (childStart[i] != -1)    // ignore empty octants - don't create empty octants with no particles inside
+            if (childStart[i] != -1)
             {
-                nodes.push_back(Node(childStart[i], childEnd[i], -1, childSize)); // empty leaf
+                nodes.push_back(Node(childStart[i], childEnd[i], -1, childSize));
                 nodeCount++;
 
                 stack.push({nodes[nodeIndex].firstChild + childCount, level + 1});
@@ -137,15 +132,13 @@ void Octree::computeMassDistribution(const std::vector<Particle> &particles) {
         node.mass = 0;
         node.mcx = node.mcy = node.mcz = 0;
 
-        // if leaf - calculate node's mass and COM based on particles inside that node
         if (node.isLeaf()) {
             if (node.isEmpty()) continue;
 
             for (int p = node.start; p < node.end; p++) {
-                if (node.start == -1 || node.end == -1) continue;   // if nmode is empty
+                if (node.start == -1 || node.end == -1) continue;
                 const Particle& particle = particles[p];
 
-                // update COM
                 node.mass += particle.mass;
                 node.mcx += particle.x * particle.mass;
                 node.mcy += particle.y * particle.mass;
@@ -158,7 +151,7 @@ void Octree::computeMassDistribution(const std::vector<Particle> &particles) {
                 node.mcz /= node.mass;
             }
         }
-        else    // else calculate first node's children and accumulate COMs
+        else
         {
             float totalMass = 0;
             float cx = 0, cy = 0, cz = 0;
@@ -193,7 +186,6 @@ void Octree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, c
         return;
     }
 
-    // vector from particle position to node center of mass
     float dx = node.mcx - particle.x;
     float dy = node.mcy - particle.y;
     float dz = node.mcz - particle.z;
@@ -204,7 +196,7 @@ void Octree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, c
     if (sizeSq < distSq * THETA_SQ) {
         float invDist = 1.0f / sqrtf(distSq);
         float invDist3 = invDist * invDist * invDist;
-        float factor = G * G_MULTIPLIER * node.mass * invDist3; // check the node's COM
+        float factor = G * G_MULTIPLIER * node.mass * invDist3;
 
         particle.ax += dx * factor;
         particle.ay += dy * factor;
@@ -212,13 +204,12 @@ void Octree::computeForcesAffectingParticle(int nodeIndex, Particle &particle, c
 
         if (countInteractions) COM_INTERACTIONS++;
     }
-    else {  // traverse children TOP-BOTTOM
+    else {
         if (node.isLeaf()) {
             for (int p = node.start; p < node.end; p++) {
                 if (p == -1) continue;
                 const Particle& target = particles[p];
 
-                // ignore A <-> A
                 if (&target == &particle) continue;
 
                 float pdx = target.x - particle.x;

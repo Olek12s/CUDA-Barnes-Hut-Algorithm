@@ -11,7 +11,7 @@
 
 class Camera {
 public:
-    Camera();   // init with default position (0,0,0)
+    Camera();
     Camera(float x, float y, float z);
     void update(GLFWwindow* window, float deltaTime);
     void keyboardInput(GLFWwindow *window, float deltaTime);
@@ -26,12 +26,12 @@ public:
     float lastX;
     float lastY;
     bool mouseMoved;
-    float speed;                // camera speed
-    glm::vec3 currentVelocity;  // current camera speed (if moving)
-    float fov;                  // field of view
-    glm::vec3 position;         // position of camera in world
-    glm::vec3 viewDirection;    // direction of looking, default (1,0,0)
-    glm::mat4 view;             // View matrix which transforms world space into camera (view) space
+    float speed;
+    glm::vec3 currentVelocity;
+    float fov;
+    glm::vec3 position;
+    glm::vec3 viewDirection;
+    glm::mat4 view;
 
 private:
     bool lastAddPressed = false;
