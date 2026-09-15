@@ -149,32 +149,40 @@ int main() {
         }
         accumulatedTimings[8] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        // 9. compute forces (multithread)
+        // // 9. compute forces (multithread)
+        // t0 = std::chrono::high_resolution_clock::now();
+        // std::vector<std::thread> threads;
+        // threads.reserve(NUM_THREADS);
+        //
+        // auto worker = [&](size_t start, size_t end)
+        // {
+        //     for (size_t i = start; i < end; i++)
+        //     {
+        //         octtree.computeForcesAffectingParticle(0, particles[i], particles);
+        //     }
+        // };
+        //
+        // size_t n = particles.size();
+        // size_t chunk = (n + NUM_THREADS - 1) / NUM_THREADS;
+        //
+        // for (unsigned int t = 0; t < NUM_THREADS; t++)
+        // {
+        //     size_t start = t * chunk;
+        //     size_t end = std::min(start + chunk, n);
+        //     threads.emplace_back(worker, start, end);
+        // }
+        //
+        // for (auto& th : threads)
+        // {
+        //     th.join();  // sync barrier
+        // }
+        // accumulatedTimings[9] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+
+        // 9. compute forces
         t0 = std::chrono::high_resolution_clock::now();
-        std::vector<std::thread> threads;
-        threads.reserve(NUM_THREADS);
-
-        auto worker = [&](size_t start, size_t end)
-        {
-            for (size_t i = start; i < end; i++)
-            {
-                octtree.computeForcesAffectingParticle(0, particles[i], particles);
-            }
-        };
-
-        size_t n = particles.size();
-        size_t chunk = (n + NUM_THREADS - 1) / NUM_THREADS;
-
-        for (unsigned int t = 0; t < NUM_THREADS; t++)
-        {
-            size_t start = t * chunk;
-            size_t end = std::min(start + chunk, n);
-            threads.emplace_back(worker, start, end);
-        }
-
-        for (auto& th : threads)
-        {
-            th.join();  // sync barrier
+#pragma omp parallel for schedule(static) num_threads(NUM_THREADS)
+        for (intptr_t i = 0; i < static_cast<intptr_t>(particles.size()); ++i) {
+            octtree.computeForcesAffectingParticle(0, particles[i], particles);
         }
         accumulatedTimings[9] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 

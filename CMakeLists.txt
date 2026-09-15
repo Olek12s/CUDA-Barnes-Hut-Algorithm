@@ -30,6 +30,9 @@ target_include_directories(Barnes-Hut-Licencjat PRIVATE
         "${CMAKE_SOURCE_DIR}/include/imgui"
 )
 
+find_package(OpenMP REQUIRED)
+target_link_libraries(Barnes-Hut-Licencjat PRIVATE OpenMP::OpenMP_CXX)
+
 
 target_include_directories(Barnes-Hut-Licencjat PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
