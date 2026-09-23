@@ -80,8 +80,31 @@ std::array<std::pair<float,float>, 3> findMinMax(std::vector<Particle>& particle
         bounds[2].first = std::min(bounds[2].first, p.z);
         bounds[2].second = std::max(bounds[2].second, p.z);
     }
-
     return bounds;
+}
+
+void computeDirectForces(std::vector<Particle>& parts) {
+    for (auto& p : parts) {
+        p.ax = p.ay = p.az = 0.0f;
+    }
+
+#pragma omp parallel for schedule(static) num_threads(NUM_THREADS)
+    for (intptr_t i = 0; i < static_cast<intptr_t>(parts.size()); i++) {
+        for (intptr_t j = 0; j < static_cast<intptr_t>(parts.size()); j++) {
+            if (i == j) continue;
+            float dx = parts[j].x - parts[i].x;
+            float dy = parts[j].y - parts[i].y;
+            float dz = parts[j].z - parts[i].z;
+            float distSq = dx*dx + dy*dy + dz*dz + EPSILON_SQ;
+            float invDist = 1.0f / std::sqrt(distSq);
+            float invDist3 = invDist * invDist * invDist;
+            float factor = G * G_MULTIPLIER * parts[j].mass * invDist3;
+
+            parts[i].ax += dx * factor;
+            parts[i].ay += dy * factor;
+            parts[i].az += dz * factor;
+        }
+    }
 }
 
 int main() {
@@ -94,6 +117,9 @@ int main() {
     auto tpsTimer = std::chrono::steady_clock::now();
     int frameCount = 0;
 
+    std::vector<Particle> shadowParticles;
+    std::vector<Particle> exactBHState;
+
     while (!renderer.isTerminated) {
         // 1. render
         auto t0 = std::chrono::high_resolution_clock::now();
@@ -103,11 +129,20 @@ int main() {
         frameCount++;
         accumulatedTimings[0] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
+        if (measureAccuracy && (!lastMeasureAccuracy || shadowParticles.size() != particles.size())) {
+            shadowParticles = particles;
+            std::fill(errorAccHistory.begin(), errorAccHistory.end(), 0.0f);
+            std::fill(errorPosHistory.begin(), errorPosHistory.end(), 0.0f);
+            historyOffset = 0;
+        }
+        lastMeasureAccuracy = measureAccuracy;
+
         // 2. integrate w/ leapfrog (velocity step 1/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogVelStep(TIME_STEP * 0.5f);
         }
+        if (measureAccuracy) for (auto &p : shadowParticles) p.leapFrogVelStep(TIME_STEP * 0.5f);
         accumulatedTimings[1] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 2.5 integrate w/ leapfrog (position step)
@@ -115,6 +150,7 @@ int main() {
         for (auto &p : particles) {
             p.leapFrogPosStep(TIME_STEP);
         }
+        if (measureAccuracy) for (auto &p : shadowParticles) p.leapFrogPosStep(TIME_STEP);
         accumulatedTimings[2] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 3. bounds
@@ -128,9 +164,36 @@ int main() {
         accumulatedTimings[4] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         // 5. sort by morton
+        // t0 = std::chrono::high_resolution_clock::now();
+        // std::sort(particles.begin(), particles.end(), comp);
+        // accumulatedTimings[5] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+
         t0 = std::chrono::high_resolution_clock::now();
-        std::sort(particles.begin(), particles.end(), comp);
+
+        std::vector<int> perm(particles.size());
+        for (size_t i = 0; i < perm.size(); ++i) perm[i] = static_cast<int>(i);
+
+        std::sort(perm.begin(), perm.end(), [&](int a, int b) {
+            return particles[a].Z_CODE < particles[b].Z_CODE;
+        });
+
+        std::vector<Particle> tempParticles;
+        tempParticles.reserve(particles.size());
+        for (size_t i = 0; i < perm.size(); ++i) {
+            tempParticles.push_back(particles[perm[i]]);
+        }
+        particles = std::move(tempParticles);
+
+        if (measureAccuracy && shadowParticles.size() == particles.size()) {
+            std::vector<Particle> tempShadow;
+            tempShadow.reserve(shadowParticles.size());
+            for (size_t i = 0; i < perm.size(); ++i) {
+                tempShadow.push_back(shadowParticles[perm[i]]);
+            }
+            shadowParticles = std::move(tempShadow);
+        }
         accumulatedTimings[5] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
+
 
         // 6. rebuild tree
         t0 = std::chrono::high_resolution_clock::now();
@@ -186,11 +249,53 @@ int main() {
         }
         accumulatedTimings[9] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
+
+        if (measureAccuracy && !particles.empty()) {
+            computeDirectForces(shadowParticles);
+
+            exactBHState = particles;
+            computeDirectForces(exactBHState);
+
+            float totalE = 0.0f;
+            float totalEr = 0.0f;
+            size_t n = particles.size();
+
+            for (size_t i = 0; i < n; i++) {
+                float diffX = particles[i].ax - exactBHState[i].ax;
+                float diffY = particles[i].ay - exactBHState[i].ay;
+                float diffZ = particles[i].az - exactBHState[i].az;
+                float diffMag = std::sqrt(diffX*diffX + diffY*diffY + diffZ*diffZ);
+
+                float dirMag = std::sqrt(exactBHState[i].ax*exactBHState[i].ax +
+                                         exactBHState[i].ay*exactBHState[i].ay +
+                                         exactBHState[i].az*exactBHState[i].az);
+
+                if (dirMag > 1e-10f) {
+                    totalE += (diffMag / dirMag);
+                }
+
+                float rx = particles[i].x - shadowParticles[i].x;
+                float ry = particles[i].y - shadowParticles[i].y;
+                float rz = particles[i].z - shadowParticles[i].z;
+                totalEr += std::sqrt(rx*rx + ry*ry + rz*rz);
+            }
+
+            currentErrorAcc = totalE / n;
+            currentErrorPos = totalEr / n;
+
+            errorAccHistory[historyOffset] = currentErrorAcc;
+            errorPosHistory[historyOffset] = currentErrorPos;
+            historyOffset = (historyOffset + 1) % errorAccHistory.size();
+        }
+
+
+
         // 10. integrate w/ leapfrog (velocity step 2/2)
         t0 = std::chrono::high_resolution_clock::now();
         for (auto &p : particles) {
             p.leapFrogVelStep(TIME_STEP * 0.5f);
         }
+        if (measureAccuracy) for (auto &p : shadowParticles) p.leapFrogVelStep(TIME_STEP * 0.5f);
         accumulatedTimings[10] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
         auto now = std::chrono::steady_clock::now();

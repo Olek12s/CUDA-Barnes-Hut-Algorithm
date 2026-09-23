@@ -33,4 +33,19 @@ inline float maxRadius = 10000.0f;
 inline bool countInteractions = false;
 // ##### VARIABLES FOR IM GUI ##### //
 
+
+// ##### ACCURACY METRICS ##### //
+inline bool measureAccuracy = false;
+inline bool lastMeasureAccuracy = false;
+
+inline std::vector<float> errorAccHistory(2000, 0.0f);
+inline float currentErrorAcc = 0.0f;
+
+inline std::vector<float> errorPosHistory(2000, 0.0f);
+inline float currentErrorPos = 0.0f;
+
+inline int historyOffset = 0;
+// ##### ACCURACY METRICS ##### //
+
+
 #endif //CONFIG_H

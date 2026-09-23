@@ -258,7 +258,54 @@ void Renderer::prepareImGuiFrame() {
     if (ImGui::Button("Zresetuj pozycje", ImVec2(-1, 0))) camera.position = glm::vec3(0,0,0);
     // ##### CAMERA #####
 
+    ImGui::Separator();
+
+    ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.2f, 1.0f), "Wykresy bledu:");
+    ImGui::Checkbox("Mierz dokladnosc", &measureAccuracy);
+
     ImGui::End();
+
+    if (measureAccuracy) {
+        float panelHeight = 100.0f;
+
+        ImGui::SetNextWindowPos(ImVec2(0.0f, io.DisplaySize.y - panelHeight), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, panelHeight), ImGuiCond_Always);
+
+        ImGuiWindowFlags bottomFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                                       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+        ImGui::Begin("BottomGraphs", nullptr, bottomFlags);
+
+        ImGui::Columns(2, "GraphsColumns", false);
+
+
+        ImGui::Text("Sredni blad wzgledny przyspieszenia (E): %.6f", currentErrorAcc);
+
+        ImGui::PlotLines("##AccPlot",
+                         errorAccHistory.data(),
+                         errorAccHistory.size(),
+                         historyOffset,
+                         nullptr,
+                         FLT_MAX, FLT_MAX,
+                         ImVec2(-1.0f, 65.0f));
+
+        ImGui::NextColumn();
+
+
+        ImGui::Text("Sredni blad bezwzgledny polozenia (Er): %.6f", currentErrorPos);
+        ImGui::PlotLines("##PosPlot",
+                         errorPosHistory.data(),
+                         errorPosHistory.size(),
+                         historyOffset,
+                         nullptr,
+                         FLT_MAX, FLT_MAX,
+                         ImVec2(-1.0f, 65.0f));
+
+        ImGui::Columns(1);
+        ImGui::End();
+    }
+
 }
 
 
