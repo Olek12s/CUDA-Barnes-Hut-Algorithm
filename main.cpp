@@ -8,6 +8,9 @@
 #include <utility>
 #include <thread>
 #include <chrono>
+#include <fstream>
+#include <string>
+#include <iomanip>
 
 #include "Globals.h"
 #include "Octree.h"
@@ -129,11 +132,38 @@ int main() {
         frameCount++;
         accumulatedTimings[0] += std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t0).count();
 
-        if (measureAccuracy && (!lastMeasureAccuracy || shadowParticles.size() != particles.size())) {
+        if (measureAccuracy && !lastMeasureAccuracy) {
             shadowParticles = particles;
             std::fill(errorAccHistory.begin(), errorAccHistory.end(), 0.0f);
             std::fill(errorPosHistory.begin(), errorPosHistory.end(), 0.0f);
             historyOffset = 0;
+
+            std::string filename = csvFileName;
+            if (filename.empty()) filename = "pomiary";
+            if (filename.find(".csv") == std::string::npos) filename += ".csv";
+
+            csvFile.open(filename, std::ios::out | std::ios::trunc);
+            if (csvFile.is_open()) {
+                csvFile << std::fixed << std::setprecision(10);
+                csvFile << "Tick,Mnoznik_G,Podzial,Theta,Epsilon,Krok_Czasowy,Watki,Liczba_Cial,Blad_E,Blad_Er,Czas_Wykonania\n";
+            }
+
+            currentMeasureTick = 0;
+            accumErrorAcc = 0.0;
+            accumErrorPos = 0.0;
+
+        }
+        else if (measureAccuracy && shadowParticles.size() != particles.size()) {
+            shadowParticles = particles;
+            std::fill(errorAccHistory.begin(), errorAccHistory.end(), 0.0f);
+            std::fill(errorPosHistory.begin(), errorPosHistory.end(), 0.0f);
+            historyOffset = 0;
+        }
+
+        if (!measureAccuracy && lastMeasureAccuracy) {
+            if (csvFile.is_open()) {
+                csvFile.close();
+            }
         }
         lastMeasureAccuracy = measureAccuracy;
 
@@ -283,6 +313,9 @@ int main() {
             currentErrorAcc = totalE / n;
             currentErrorPos = totalEr / n;
 
+            accumErrorAcc += currentErrorAcc;
+            accumErrorPos += currentErrorPos;
+
             errorAccHistory[historyOffset] = currentErrorAcc;
             errorPosHistory[historyOffset] = currentErrorPos;
             historyOffset = (historyOffset + 1) % errorAccHistory.size();
@@ -315,6 +348,29 @@ int main() {
                 avgTimings[i] = accumulatedTimings[i] / frameCount;
                 totalAvgTime += avgTimings[i];
             }
+
+            if (measureAccuracy && csvFile.is_open()) {
+                double avgE = accumErrorAcc / frameCount;
+                double avgEr = accumErrorPos / frameCount;
+
+                csvFile << currentMeasureTick << ","
+                        << G_MULTIPLIER << ","
+                        << SPLIT_AT_LEAF_SIZE << ","
+                        << THETA << ","
+                        << EPSILON << ","
+                        << TIME_STEP << ","
+                        << NUM_THREADS << ","
+                        << particles.size() << ","
+                        << avgE << ","
+                        << avgEr << ","
+                        << totalAvgTime << "\n";
+                csvFile.flush();
+
+                currentMeasureTick++;
+            }
+
+            accumErrorAcc = 0.0;
+            accumErrorPos = 0.0;
 
             const char* names[11] =
             {

@@ -1,6 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
+
 #include <thread>
+#include <fstream>
+#include <string>
 
 inline int SPLIT_AT_LEAF_SIZE = 8;
 constexpr int MAX_MORTON_BITS = 21;
@@ -46,6 +49,14 @@ inline float currentErrorPos = 0.0f;
 
 inline int historyOffset = 0;
 // ##### ACCURACY METRICS ##### //
+
+// ##### CSV LOGGING ##### //
+inline char csvFileName[256] = "";
+inline std::ofstream csvFile;
+inline double accumErrorAcc = 0.0;
+inline double accumErrorPos = 0.0;
+inline int currentMeasureTick = 0;
+// ##### CSV LOGGING ##### //
 
 
 #endif //CONFIG_H

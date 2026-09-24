@@ -84,6 +84,33 @@ void ParticleGenerator::createSphere(std::vector<Particle>& particles, float x, 
     }
 }
 
+void ParticleGenerator::createPlummerSphere(std::vector<Particle>& particles, float x, float y, float z, int count, float particleMass, float scaleRadius, float vx, float vy, float vz) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    
+    std::uniform_real_distribution<float> uDist(0.0001f, 0.9999f);
+    std::uniform_real_distribution<float> phiDist(0.0f, 2.0f * 3.14159265f);
+    std::uniform_real_distribution<float> costhetaDist(-1.0f, 1.0f);
+
+    for (int i = 0; i < count; i++) {
+        float u = uDist(gen);
+
+
+        float r = scaleRadius / std::sqrt(std::pow(u, -2.0f/3.0f) - 1.0f);
+
+        float phi = phiDist(gen);
+        float costheta = costhetaDist(gen);
+        float theta = std::acos(costheta);
+
+
+        float px = x + r * std::sin(theta) * std::cos(phi);
+        float py = y + r * std::sin(theta) * std::sin(phi);
+        float pz = z + r * costheta;
+
+        particles.push_back(Particle(px, py, pz, particleMass, vx, vy, vz));
+    }
+}
+
 
 
 

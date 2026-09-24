@@ -245,6 +245,9 @@ void Renderer::prepareImGuiFrame() {
     if (ImGui::Button("Stworz kule", ImVec2(-1, 0))) {
         ParticleGenerator::createSphere(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, minRadius, maxRadius, CVV.x, CVV.y, CVV.z);
     }
+    if (ImGui::Button("Stworz silnie nierownomierny (Plummer)", ImVec2(-1, 0))) {
+        ParticleGenerator::createPlummerSphere(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, minRadius, CVV.x, CVV.y, CVV.z);
+    }
     ImGui::Separator();
     // ##### PARTICLE GENERATOR #####
 
@@ -260,7 +263,7 @@ void Renderer::prepareImGuiFrame() {
 
     ImGui::Separator();
 
-    ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.2f, 1.0f), "Wykresy bledu:");
+    ImGui::InputText("Nazwa pliku", csvFileName, sizeof(csvFileName));
     ImGui::Checkbox("Mierz dokladnosc", &measureAccuracy);
 
     ImGui::End();
