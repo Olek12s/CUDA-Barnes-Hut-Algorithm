@@ -91,7 +91,7 @@ void computeDirectForces(std::vector<Particle>& parts) {
         p.ax = p.ay = p.az = 0.0f;
     }
 
-#pragma omp parallel for schedule(static) num_threads(NUM_THREADS)
+#pragma omp parallel for schedule(static) num_threads(MAX_HARDWARE_THREADS)
     for (intptr_t i = 0; i < static_cast<intptr_t>(parts.size()); i++) {
         for (intptr_t j = 0; j < static_cast<intptr_t>(parts.size()); j++) {
             if (i == j) continue;
