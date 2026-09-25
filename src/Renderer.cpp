@@ -245,8 +245,8 @@ void Renderer::prepareImGuiFrame() {
     if (ImGui::Button("Stworz kule", ImVec2(-1, 0))) {
         ParticleGenerator::createSphere(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, genCenterMass, minRadius, maxRadius, CVV.x, CVV.y, CVV.z);
     }
-    if (ImGui::Button("Stworz silnie nierownomierny (Plummer)", ImVec2(-1, 0))) {
-        ParticleGenerator::createPlummerSphere(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, minRadius, CVV.x, CVV.y, CVV.z);
+    if (ImGui::Button("Stworz zageszczony szescian", ImVec2(-1, 0))) {
+        ParticleGenerator::createNonUniformCube(*particles, FOC.x, FOC.y, FOC.z, genCount, genParticleMass, CVV.x, CVV.y, CVV.z);
     }
     ImGui::Separator();
     // ##### PARTICLE GENERATOR #####

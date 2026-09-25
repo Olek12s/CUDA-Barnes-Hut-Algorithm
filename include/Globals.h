@@ -5,12 +5,14 @@
 #include <fstream>
 #include <string>
 
-inline int SPLIT_AT_LEAF_SIZE = 8;
+inline int SPLIT_AT_LEAF_SIZE = 1;
 constexpr int MAX_MORTON_BITS = 21;
 constexpr unsigned int MORTON_SCALE = (1u << MAX_MORTON_BITS) - 1u;
 
-inline float EPSILON = 0.35f;
-inline float THETA = 0.5f;
+inline float EPSILON = 0.05f;
+//inline float THETA = 0.25f;
+//inline float THETA = 0.5f;
+inline float THETA = 1.0f;
 inline const float G = 6.674e-11;
 inline float EPSILON_SQ = EPSILON * EPSILON;
 inline float THETA_SQ = THETA * THETA;
